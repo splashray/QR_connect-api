@@ -1,6 +1,6 @@
-# RAFFLE DRAW API
+# QR Connect API
 
-The raffle draw api is the backend for a raffle draw hosting service. You can host raffle draws, receive payments directly into your bank account, issue tickets on payment, select winners (via a wheel or something similar), track sales and more.
+The QR connect api is an ecommerce website
 
 ## Table of Contents
 
@@ -16,13 +16,7 @@ The raffle draw api is the backend for a raffle draw hosting service. You can ho
 
 ## Features
 
-- Create raffle draws
-- Create teams
-- Invite members to your team
-- Track sales and contestants 💵
-- Issue tickets on payment 🎫
-- Select winning tickets
-- Get paid directly into your bank account.
+- Ecom website
 
 ## Prerequisites
 
@@ -37,13 +31,13 @@ Before running this project, ensure you have the following prerequisites:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/Ayo-Awe/raffle_draw_api.git
+   git clone https://github.com/splashray/QR_connect-api.git
    ```
 
 2. Install the dependencies:
 
    ```bash
-   cd raffle_draw_api
+   cd QR_connect-api
    npm install
    ```
 
@@ -62,7 +56,7 @@ Before running this project, ensure you have the following prerequisites:
 
 ## API Documentation
 
-The API documentation is available [here](https://documenter.getpostman.com/view/28334766/2s946fcsLb)
+The API documentation is available [here]()
 
 ## Testing
 
@@ -73,8 +67,6 @@ The API documentation is available [here](https://documenter.getpostman.com/view
 - `npm start`: Starts the server.
 - `npm test`: Runs the tests. (WIP)
 - `npm run lint`: Performs linting checks. (WIP)
-- `npm run db:migrate`: Runs database migrations.
-- `npm run db:generate`: Generates database migrations
 - `npm run dev`: Starts the server in development mode with automatic reloading.
 
 ## Contributing
