@@ -1,10 +1,6 @@
 import mongoose, { Document, Model } from "mongoose";
 
-enum AccountType {
-  Buyer = "Buyer",  
-  Admin = "Admin",
-  Business = "Business",
-}
+type AccountType = "Admin" | "Buyer" | "Business";
 
 interface IAdmin extends Document {
   username: string;
@@ -35,11 +31,12 @@ const AdminSchema = new mongoose.Schema<IAdmin>(
     accountType: {
       type: String,
       required: true,
-      enum: Object.values(AccountType),
+      enum: ["Admin", "Buyer", "Business"],
     },
     profilePicture: {
       type: String,
-      default: "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
+      default:
+        "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
     },
     isAdmin: {
       type: Boolean,

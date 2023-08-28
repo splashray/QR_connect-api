@@ -25,26 +25,3 @@ export const createBuyerValidator = (payload: any) => {
 
   return validateRequestBody(schema, payload);
 };
-
-export const createAdminValidator = (payload: any) => {
-  const schema = z.object({
-    username: z.string({
-      required_error: "Please provide a valid username",
-      invalid_type_error: "Please provide a valid username",
-    }),
-    email: z
-      .string({
-        required_error: "Please provide a valid email",
-        invalid_type_error: "Please provide a valid email",
-      })
-      .email("Please provide a valid email address"),
-    password: z
-      .string({
-        required_error: "Please provide a valid email",
-        invalid_type_error: "Please provide a valid email",
-      })
-      .min(8, "Password must be minimum of 8 characters."),
-  });
-
-  return validateRequestBody(schema, payload);
-};
