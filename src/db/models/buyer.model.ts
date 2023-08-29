@@ -1,16 +1,8 @@
 import mongoose, { Document, Model } from "mongoose";
 
-enum AccountType {
-  Buyer = "Buyer",
-  Admin = "Admin",
-  Business = "Business",
-}
+type AccountType = "Admin" | "Buyer" | "Business";
 
-enum UserType {
-  Buyer = "Buyer",
-  Business = "Business",
-}
-
+type UserType = "Buyer" | "Business";
 interface IBuyer extends Document {
   email: string;
   firstName: string;
@@ -68,12 +60,12 @@ const BuyerSchema = new mongoose.Schema<IBuyer>(
     accountType: {
       type: String,
       required: true,
-      enum: Object.values(AccountType),
+      enum: ["Admin", "Buyer", "Business"],
     },
     userType: {
       type: String,
       required: true,
-      enum: Object.values(UserType),
+      enum: ["Buyer","Business"]
     },
     profilePicture: {
       type: String,

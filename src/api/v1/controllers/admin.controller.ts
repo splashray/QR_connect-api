@@ -13,8 +13,6 @@ class AdminController {
   }
 
   async createAdmin(req: Request, res: Response) {
-    const { id } = req.user!;
-
     const { data, error } = validators.createAdminValidator(req.body);
 
     if (error) throw new BadRequest(error.message, error.code);

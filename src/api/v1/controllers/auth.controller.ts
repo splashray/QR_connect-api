@@ -1,32 +1,57 @@
 import { Request, Response } from "express";
-import userRepository from "../../../repositories/user.repository";
-import { BadRequest } from "../../../errors/httpErrors";
-import * as jwt from "jsonwebtoken";
+import * as bcrypt from "bcrypt";
+import  _ from "lodash";
+import { BadRequest, Conflict } from "../../../errors/httpErrors";
+import Admin from "../../../db/models/admin.model";
+import Business from "../../../db/models/business.model";
+import * as validators from "../validators/auth.validator";
+import { generateAuthToken } from "../../../utils/authHelpers";
+import { businessFields } from "../../../utils/fieldHelpers";
 
 class AuthController {
-  async mockLogin(req: Request, res: Response) {
-    if (!req.body.email || typeof req.body.email !== "string") {
-      throw new BadRequest("Missing Email", "MISSING_REQUIRED_FIELD");
-    }
+  async businessFormRegister(req: Request, res: Response) {
 
-    const user = await userRepository.getByEmail(req.body.email);
+    let { firstName, lastName, email, businessName, password, industry } = req.body;
 
-    if (!user) {
-      throw new BadRequest(
-        "User with email not found",
-        "MISSING_REQUIRED_FIELD"
+    const { data, error } = validators.createBusinessValidator(req.body);
+
+    if (error) throw new BadRequest(error.message, error.code);
+
+    const emailExists = await Business.findOne({ email });
+    if (emailExists) {
+      console.log(`${email} already exist, change the email.`);
+      throw new Conflict(
+        `${req.body.email} already exist, change the email.`,
+        "EXISTING_USER_EMAIL",
       );
     }
+    const accountType = "Business";
 
-    const token = jwt.sign(
-      {
-        clerkUserId: user.clerkId,
+    const hash = await bcrypt.hash(password, 10);
+    const business = await Business.create({
+      ...data,
+      isAdmin: true,
+      accountType,
+      userType: "Business",
+      authType: {
+        password: hash
       },
-      process.env.CLERK_PEM_PUBLIC_KEY
-    );
+    });
 
-    res.ok({ token });
+    const { accessToken, refreshToken } = await generateAuthToken(business, accountType);
+
+    const formattedBusiness = _.pick(business, businessFields);
+
+    return res.created({
+      business: formattedBusiness,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      message: "Account created successfully",
+    });
+
   }
+
+
 }
 
 export default new AuthController();

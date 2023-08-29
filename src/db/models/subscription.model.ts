@@ -1,11 +1,6 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-enum SubscriptionStatus {
-  Active = "active",
-  Expired = "expired",
-  Failed = "failed",
-  Pending = "pending",
-}
+type SubscriptionStatus = "active"| "expired"|"failed"|"pending";
 
 interface ISubscription extends Document {
   businessId: mongoose.Types.ObjectId;
@@ -37,7 +32,7 @@ const subscriptionSchema = new Schema<ISubscription>(
     },
     status: {
       type: String,
-      enum: Object.values(SubscriptionStatus),
+      enum: ["active", "expired", "failed", "pending"],
       required: true,
     },
   },

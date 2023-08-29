@@ -26,6 +26,32 @@ export const createBuyerValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
+export const createBusinessValidator = (payload: any) => {
+  const schema = z.object({
+    firstName: z.string({
+      required_error: "First name is required.",
+    }),
+    lastName: z.string({
+      required_error: "Last name is required.",
+    }),
+    email: z.string({
+      required_error: "Email is required.",
+      invalid_type_error: "Please provide a valid email.",
+    }),
+    businessName: z.string({
+      required_error: "business name is required.",
+    }),
+    industry: z.string({
+      required_error: "industry is required.",
+    }),
+    authType: z.object({
+      password: z.string(),
+    }),
+  });
+
+  return validateRequestBody(schema, payload);
+};
+
 export const createAdminValidator = (payload: any) => {
   const schema = z.object({
     username: z.string({

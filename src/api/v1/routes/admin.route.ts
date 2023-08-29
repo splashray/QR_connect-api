@@ -5,7 +5,9 @@ import controller from "../controllers/admin.controller";
 
 const router = express.Router();
 
-// router.get("/", requireAuth, controller.getLoggedInUser);
+router.get("/", controller.getLoggedInAdmin);
+// router.get("/", requireAuth, controller.getLoggedInAdmin);
+
 // router.get("/teams", requireAuth, controller.getUserTeams);
 
 export default router;

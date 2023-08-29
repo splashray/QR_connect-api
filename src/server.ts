@@ -17,5 +17,5 @@ app.listen(port, async () => {
   await redisClient.connect();
   console.log("Successfully connected to redis");
   await startWorkers();
-  console.log("Successfully started workers");
+  // console.log("Successfully started workers");
 });

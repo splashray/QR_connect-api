@@ -1,21 +1,10 @@
 import mongoose, { Document, Model } from "mongoose";
 
-enum AccountType {
-  Buyer = "Buyer",
-  Admin = "Admin",
-  Business = "Business",
-}
+type AccountType = "Admin" | "Buyer" | "Business";
 
-enum UserType {
-  Buyer = "Buyer",
-  Business = "Business",
-}
+type UserType = "Buyer" | "Business";
 
-enum SubscriptionStatus {
-  NoSubscription = "No-Subscription",
-  Subscribed = "Subscribed",
-  Deactivated = "Deactivated",
-}
+type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
 interface IBusiness extends Document {
   qrcode: string;
@@ -89,12 +78,12 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     accountType: {
       type: String,
       required: true,
-      enum: Object.values(AccountType),
+      enum: ["Admin", "Buyer", "Business"],
     },
     userType: {
       type: String,
       required: true,
-      enum: Object.values(UserType),
+      enum: ["Buyer","Business"]
     },
     profilePicture: {
       type: String,
@@ -110,8 +99,8 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     },
     subscriptionStatus: {
       type: String,
-      enum: Object.values(SubscriptionStatus),
-      default: SubscriptionStatus.NoSubscription,
+      enum:[ "Trial", "Subscribed", "Deactivated"],
+      default: "Trial",
     },
     passwordRecovery: {
       passwordRecoveryOtp: {
