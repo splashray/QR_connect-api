@@ -42,7 +42,7 @@ const BuyerSchema = new mongoose.Schema<IBuyer>(
       required: true,
       unique: true,
     },
-    
+
     addressBook: {
       type: String,
     },
@@ -65,12 +65,12 @@ const BuyerSchema = new mongoose.Schema<IBuyer>(
     userType: {
       type: String,
       required: true,
-      enum: ["Buyer","Business"]
+      enum: ["Buyer", "Business"],
     },
     profilePicture: {
       type: String,
-      default: "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
-
+      default:
+        "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
     },
     isAdmin: {
       type: Boolean,
@@ -97,7 +97,7 @@ const BuyerSchema = new mongoose.Schema<IBuyer>(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const BuyerModel: Model<IBuyer> = mongoose.model<IBuyer>("Buyer", BuyerSchema);

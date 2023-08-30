@@ -21,12 +21,10 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const SubscriptionPlanModel: Model<ISubscriptionPlan> = mongoose.model<ISubscriptionPlan>(
-  "SubscriptionPlan",
-  subscriptionPlanSchema
-);
+const SubscriptionPlanModel: Model<ISubscriptionPlan> =
+  mongoose.model<ISubscriptionPlan>("SubscriptionPlan", subscriptionPlanSchema);
 
 export default SubscriptionPlanModel;

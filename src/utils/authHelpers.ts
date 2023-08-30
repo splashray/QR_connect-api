@@ -12,7 +12,10 @@ interface AccountDetails {
   _id: string;
 }
 
-const generateAuthToken = async (accountDetails: AccountDetails, accountType: "Buyer" | "Admin" | "Business") => {
+const generateAuthToken = async (
+  accountDetails: AccountDetails,
+  accountType: "Buyer" | "Admin" | "Business",
+) => {
   try {
     let payload, accessToken, refreshToken, updatedDetails;
 
@@ -28,7 +31,7 @@ const generateAuthToken = async (accountDetails: AccountDetails, accountType: "B
       updatedDetails = await Buyer.findOneAndUpdate(
         { _id: accountDetails._id },
         { refreshToken, updatedAt: new Date() },
-        { new: true }
+        { new: true },
       );
     } else if (accountType === "Admin") {
       payload = { adminId: accountDetails._id };
@@ -42,7 +45,7 @@ const generateAuthToken = async (accountDetails: AccountDetails, accountType: "B
       updatedDetails = await Admin.findOneAndUpdate(
         { _id: accountDetails._id },
         { refreshToken, updatedAt: new Date() },
-        { new: true }
+        { new: true },
       );
     } else if (accountType === "Business") {
       payload = { businessId: accountDetails._id };
@@ -56,7 +59,7 @@ const generateAuthToken = async (accountDetails: AccountDetails, accountType: "B
       updatedDetails = await Business.findOneAndUpdate(
         { _id: accountDetails._id },
         { refreshToken, updatedAt: new Date() },
-        { new: true }
+        { new: true },
       );
     } else {
       throw new Error("Invalid type provided");
@@ -69,47 +72,95 @@ const generateAuthToken = async (accountDetails: AccountDetails, accountType: "B
 };
 
 // Use to verify the refresh token before refreshing the access token
-const verifyRefreshToken = (refreshToken: string, accountType: "Buyer" | "Admin" | "Business") => {
+const verifyRefreshToken = (
+  refreshToken: string,
+  accountType: "Buyer" | "Admin" | "Business",
+) => {
   const privateKey = process.env.REFRESH_TOKEN!;
 
   return new Promise((resolve, reject) => {
-    let model;
-
     if (accountType === "Buyer") {
-      model = Buyer;
-    } else if (accountType === "Admin") {
-      model = Admin;
-    } else if (accountType === "Business") {
-      model = Business;
-    } else {
-      return reject(new Error("Invalid account type provided"));
-    }
-
-    model.findOne({ refreshToken })
-      .then((doc: any) => {
-        if (!doc) {
-          throw new Error("Invalid refresh token");
-        }
-
-        jwt.verify(refreshToken, privateKey, (err: jwt.VerifyErrors | null, tokenDetails: any) => {
-          if (err) {
+      Buyer.findOne({ refreshToken })
+        .then((doc: any) => {
+          if (!doc) {
             throw new Error("Invalid refresh token");
           }
 
-          resolve({
-            tokenDetails,
-            error: false,
-            message: "Valid refresh token",
-          });
+          jwt.verify(
+            refreshToken,
+            privateKey,
+            (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+              if (err) {
+                throw new Error("Invalid refresh token");
+              }
+
+              resolve({
+                tokenDetails,
+                error: false,
+                message: "Valid refresh token",
+              });
+            },
+          );
+        })
+        .catch((error: any) => {
+          throw new Error(error.message);
         });
-      })
-      .catch((error: any) => {
-        throw new Error(error.message);
-      });
+    } else if (accountType === "Admin") {
+      Admin.findOne({ refreshToken })
+        .then((doc: any) => {
+          if (!doc) {
+            throw new Error("Invalid refresh token");
+          }
+
+          jwt.verify(
+            refreshToken,
+            privateKey,
+            (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+              if (err) {
+                throw new Error("Invalid refresh token");
+              }
+
+              resolve({
+                tokenDetails,
+                error: false,
+                message: "Valid refresh token",
+              });
+            },
+          );
+        })
+        .catch((error: any) => {
+          throw new Error(error.message);
+        });
+    } else if (accountType === "Business") {
+      Business.findOne({ refreshToken })
+        .then((doc: any) => {
+          if (!doc) {
+            throw new Error("Invalid refresh token");
+          }
+
+          jwt.verify(
+            refreshToken,
+            privateKey,
+            (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+              if (err) {
+                throw new Error("Invalid refresh token");
+              }
+
+              resolve({
+                tokenDetails,
+                error: false,
+                message: "Valid refresh token",
+              });
+            },
+          );
+        })
+        .catch((error: any) => {
+          throw new Error(error.message);
+        });
+    } else {
+      return reject(new Error("Invalid account type provided"));
+    }
   });
 };
 
-export {
-  generateAuthToken,
-  verifyRefreshToken,
-};
+export { generateAuthToken, verifyRefreshToken };

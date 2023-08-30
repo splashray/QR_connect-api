@@ -4,7 +4,7 @@ type ConditionalCallback = (req: Request) => boolean;
 
 export function conditionalMiddleware(
   middleware: RequestHandler,
-  callback: ConditionalCallback
+  callback: ConditionalCallback,
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
     const applyMiddleware = callback(req);
@@ -20,7 +20,7 @@ export function paginate(
   cursor: any,
   perPage: any,
   maxPerPage: number = 100,
-  defaultPerPage: number = 30
+  defaultPerPage: number = 30,
 ) {
   if (maxPerPage <= 0) {
     throw new Error("Max per page must be greater than 0");
@@ -30,7 +30,7 @@ export function paginate(
     throw new Error("Default per page must be greater than 0");
   }
 
-  let page = parseCursor(cursor) || 1;
+  const page = parseCursor(cursor) || 1;
   let parsedPerPage = Number(perPage);
 
   if (isNaN(parsedPerPage) || parsedPerPage <= 0) {

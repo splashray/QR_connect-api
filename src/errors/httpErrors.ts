@@ -13,7 +13,8 @@ export type UnauthorizedErrorCode =
   | "EXPIRED_TOKEN"
   | "MISSING_AUTH_HEADER"
   | "MALFORMED_TOKEN"
-  | "INVALID_TOKEN";
+  | "INVALID_TOKEN"
+  | "INVALID_PASSWORD";
 
 export type ForbiddenErrorCode =
   | "ACCESS_DENIED"

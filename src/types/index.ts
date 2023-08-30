@@ -12,7 +12,7 @@ declare global {
       error(
         statusCode: number,
         message: string,
-        errorCode: HttpErrorCode
+        errorCode: HttpErrorCode,
       ): Response;
     }
     export interface Request {

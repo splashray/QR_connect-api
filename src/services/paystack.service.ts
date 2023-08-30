@@ -113,7 +113,7 @@ class PayStackService {
 
   async resolveBank(accountNumber: string, bankCode: string) {
     const cachedResult = await redisClient.get(
-      `resolve:${accountNumber}-${bankCode}`
+      `resolve:${accountNumber}-${bankCode}`,
     );
 
     if (cachedResult) return JSON.parse(cachedResult) as BankResolution;
@@ -126,7 +126,7 @@ class PayStackService {
             account_number: accountNumber,
             bank_code: bankCode,
           },
-        }
+        },
       );
 
       await redisClient.set(
@@ -135,7 +135,7 @@ class PayStackService {
         {
           NX: true,
           EX: RESOLUTION_CACHE_EXPIRATION,
-        }
+        },
       );
 
       return response.data.data;
@@ -156,7 +156,7 @@ class PayStackService {
 
       const response = await this.axios.post<CreateSubAccountResponse>(
         "/subaccount",
-        payload
+        payload,
       );
 
       return response.data.data;
@@ -168,7 +168,7 @@ class PayStackService {
 
   async updateSubaccount(
     subaccountCode: string,
-    data: Omit<CreateSubAccountData, "teamId">
+    data: Omit<CreateSubAccountData, "teamId">,
   ) {
     try {
       const payload = {
@@ -180,7 +180,7 @@ class PayStackService {
 
       const response = await this.axios.put<UpdateSubaccountResponse>(
         `/subaccount/${subaccountCode}`,
-        payload
+        payload,
       );
 
       return response.data.data;
@@ -231,7 +231,7 @@ class PayStackService {
         {
           ...options,
           amount: options.amount * 100, // in kobo,
-        }
+        },
       );
       return response.data.data.authorization_url;
     } catch (error) {

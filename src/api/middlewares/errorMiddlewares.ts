@@ -6,7 +6,7 @@ export function errorLogger(
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   if (err instanceof HttpError === false) console.log(err);
   next(err);
@@ -16,7 +16,7 @@ export function errorHandler(
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const isInvalidJSON =
     err instanceof SyntaxError &&

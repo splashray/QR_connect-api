@@ -29,7 +29,7 @@ function customErrorHelper(
   res: Response,
   statusCode: number,
   message: string,
-  errorCode: string
+  errorCode: string,
 ) {
   return res
     .status(statusCode)

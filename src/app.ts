@@ -30,8 +30,8 @@ app.use(cors({ origin: whitelist, exposedHeaders: ["X-API-TOKEN"] }));
 app.use(
   conditionalMiddleware(
     express.json(),
-    (req) => !req.path.includes("/webhooks/clerk")
-  )
+    (req) => !req.path.includes("/webhooks/clerk"),
+  ),
 );
 app.use(morgan("dev"));
 // API route

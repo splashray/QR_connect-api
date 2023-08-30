@@ -4,7 +4,7 @@ import { BadRequestErrorCode } from "../errors/httpErrors";
 
 export function validateRequestBody<T, U extends ZodTypeDef>(
   schema: ZodSchema<T, U, T>,
-  payload: any
+  payload: any,
 ) {
   const result = schema.safeParse(payload);
 
@@ -15,7 +15,7 @@ export function validateRequestBody<T, U extends ZodTypeDef>(
     errors[0].code === "invalid_type" &&
     (errors[0].received === "undefined" || errors[0].received === "null");
 
-  let code: BadRequestErrorCode = isMissingFieldError
+  const code: BadRequestErrorCode = isMissingFieldError
     ? "MISSING_REQUIRED_FIELD"
     : "INVALID_REQUEST_PARAMETERS";
 

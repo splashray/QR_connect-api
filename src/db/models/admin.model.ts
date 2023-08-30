@@ -50,7 +50,7 @@ const AdminSchema = new mongoose.Schema<IAdmin>(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const AdminModel: Model<IAdmin> = mongoose.model<IAdmin>("Admin", AdminSchema);

@@ -43,12 +43,10 @@ const subscriptionLogSchema = new Schema<ISubscriptionLog>(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const SubscriptionLogModel: Model<ISubscriptionLog> = mongoose.model<ISubscriptionLog>(
-  "SubscriptionLog",
-  subscriptionLogSchema
-);
+const SubscriptionLogModel: Model<ISubscriptionLog> =
+  mongoose.model<ISubscriptionLog>("SubscriptionLog", subscriptionLogSchema);
 
 export default SubscriptionLogModel;

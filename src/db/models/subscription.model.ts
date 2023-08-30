@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-type SubscriptionStatus = "active"| "expired"|"failed"|"pending";
+type SubscriptionStatus = "active" | "expired" | "failed" | "pending";
 
 interface ISubscription extends Document {
   businessId: mongoose.Types.ObjectId;
@@ -36,12 +36,12 @@ const subscriptionSchema = new Schema<ISubscription>(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const SubscriptionModel: Model<ISubscription> = mongoose.model<ISubscription>(
   "Subscription",
-  subscriptionSchema
+  subscriptionSchema,
 );
 
 export default SubscriptionModel;

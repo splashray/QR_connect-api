@@ -20,7 +20,6 @@ class EmailService {
   //   };
   //   await emailQueue.add("send-ticket", jobData);
   // }
-
   // async sendTickets(data: TicketEmailData[]) {
   //   const jobs = data.map((d) => ({
   //     name: "send-ticket",
@@ -34,7 +33,6 @@ class EmailService {
   //       },
   //     },
   //   }));
-
   //   await emailQueue.addBulk(jobs);
   // }
 }

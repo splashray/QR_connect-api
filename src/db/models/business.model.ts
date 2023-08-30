@@ -12,7 +12,7 @@ interface IBusiness extends Document {
   firstName: string;
   lastName: string;
   businessName: string;
-  businessSlug: string,
+  businessSlug: string;
   industry: string;
 
   authType: {
@@ -40,12 +40,12 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
       required: true,
     },
     firstName: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     lastName: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     email: {
       type: String,
@@ -54,18 +54,17 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     },
 
     businessName: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     businessSlug: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     industry: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
-
 
     authType: {
       password: {
@@ -83,11 +82,12 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     userType: {
       type: String,
       required: true,
-      enum: ["Buyer","Business"]
+      enum: ["Buyer", "Business"],
     },
     profilePicture: {
       type: String,
-      default: "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
+      default:
+        "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
     },
     isAdmin: {
       type: Boolean,
@@ -99,7 +99,7 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     },
     subscriptionStatus: {
       type: String,
-      enum:[ "Trial", "Subscribed", "Deactivated"],
+      enum: ["Trial", "Subscribed", "Deactivated"],
       default: "Trial",
     },
     passwordRecovery: {
@@ -118,9 +118,12 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const BusinessModel: Model<IBusiness> = mongoose.model<IBusiness>("Business", BusinessSchema);
+const BusinessModel: Model<IBusiness> = mongoose.model<IBusiness>(
+  "Business",
+  BusinessSchema,
+);
 
 export default BusinessModel;
