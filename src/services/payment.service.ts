@@ -37,12 +37,12 @@ interface InitiatePaymentOptions {
   transfer_data: {
     destination: string;
   };
-  metadata: {
-    orderId: number;
-    firstName: string;
-    lastName: string;
-    quantity: number;
-  };
+//   metadata: {
+//     orderId: number;
+//     firstName: string;
+//     lastName: string;
+//     products: string[];
+//   };
 }
 
 class StripeService {
@@ -50,6 +50,7 @@ class StripeService {
     apiVersion: "2020-08-27",
   });
 
+  // adding of banks
   async resolveBank(accountNumber: string): Promise<BankResolution | null> {
     try {
       const response = await axios.get<BankResolution>(
@@ -73,6 +74,8 @@ class StripeService {
     // You might need to maintain your own list of supported banks.
     return null;
   }
+
+  //creating sub account for business to send their funds to
   async createSubaccount(data: CreateSubAccountData): Promise<CreateSubAccountResponse | null> {
     try {
       const response = await this.stripe.accounts.create({
@@ -129,10 +132,7 @@ class StripeService {
     }
   }
 
-  async updateSubaccount(
-    subaccountId: string,
-    data: Omit<CreateSubAccountData, "teamId">
-  ): Promise<UpdateSubaccountResponse | null> {
+  async updateSubaccount(subaccountId: string, data: Omit<CreateSubAccountData, "businessId">): Promise<UpdateSubaccountResponse | null> {
     try {
       const response = await this.stripe.accounts.update(subaccountId, {
         business_profile: {
@@ -163,18 +163,16 @@ class StripeService {
     }
   }
 
-  
-
-  async initiateTicketPayment(
-    options: InitiatePaymentOptions
-  ): Promise<string | null> {
+  // initiate the Order Payment
+  async initiateOrderPayment( options: InitiatePaymentOptions): Promise<string | null> {
     try {
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount: options.amount,
         currency: options.currency,
         payment_method_types: options.payment_method_types,
         transfer_data: options.transfer_data,
-        metadata: options.metadata,
+         metadata: Stripe.MetadataParam; // Use the Stripe type for metadata
+
       });
       return paymentIntent.client_secret;
     } catch (error) {
@@ -182,6 +180,9 @@ class StripeService {
       return null;
     }
   }
+
+  // initiate the subscription Payment
+  
 }
 
 export default new StripeService();

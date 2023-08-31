@@ -9,11 +9,7 @@ import fs from "fs/promises";
 // import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 
-async function uploadPicture(
-  file: string,
-  folderName: string,
-  fileExtension: string
-): Promise<string> {
+async function uploadPicture( file: string, folderName: string, fileExtension: string): Promise<string> {
   const bucketParams = {
     Bucket: s3Bucket,
     Key: folderName + "/" + randomUUID() + fileExtension,
@@ -23,6 +19,14 @@ async function uploadPicture(
   await s3Client.send(new PutObjectCommand(bucketParams));
   return bucketParams.Key;
 }
+// To use uploadPicture for example:
+// const path = require("path");
+// const fileExtension = path.extname(file.originalname);
+
+// const uploadedKey = await uploadPicture(req.file.path, folderName, fileExtension);
+// await fs.unlink(req.file.path);
+// console.log("Uploaded key:", uploadedKey);
+
 
 async function deleteImage(key: string): Promise<void> {
   const bucketParams = {
@@ -31,6 +35,14 @@ async function deleteImage(key: string): Promise<void> {
   };
   await s3Client.send(new DeleteObjectCommand(bucketParams));
 }
+// To use deleteImage for example:
+// const imageKey = "path/to/image.jpg";
+// await deleteImage(imageKey);
+// console.log("Image deleted successfully.");
+
+
+
+
 
 // async function getImageUrl(key: string): Promise<string> {
 //   const bucketParams = {

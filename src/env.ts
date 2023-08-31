@@ -3,15 +3,24 @@ import { ZodError, z } from "zod";
 export const envSchema = z.object({
   PORT: z.string().optional(),
   MONGODB_URI: z.string(),
+  BASE_URL: z.string(),
+  STRIPE_SECRET_KEY: z.string(),
+
   REDIS_URL: z.string(),
-  PAYSTACK_SECRET: z.string(),
   REDIS_HOST: z.string(),
   REDIS_PORT: z.string(),
+
   MAILGUN_API_KEY: z.string(),
   MAILGUN_DOMAIN: z.string(),
   MAILGUN_SENDER_EMAIL: z.string().email(),
+
   JWT_SEC: z.string(),
-  REFRESH_TOKEN: z.string()
+  REFRESH_TOKEN: z.string(),
+
+  AWS_LOCATIONCONSTRAINT: z.string(),
+  SPACES_KEY: z.string(),
+  SPACES_SECRET: z.string(),
+  SPACES_S3_BUCKET: z.string()
 });
 
 try {

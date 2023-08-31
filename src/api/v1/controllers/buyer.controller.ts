@@ -11,7 +11,7 @@ import _ from "lodash";
 import bcrypt from "bcrypt";
 import { promises as fsPromises } from "fs";
 import path from "path";
-// import { uploadPicture } from "../services/imageStorage.service.js";
+import { uploadPicture } from "../../../services/file.service";
 // import { getLimit, getPage, getStartDate, getEndDate } from "../utils/dataFilter.js";
 import { buyerFields } from "../../../utils/fieldHelpers";
 import * as validators from "../validators/auth.validator";
