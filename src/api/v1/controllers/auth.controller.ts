@@ -35,19 +35,18 @@ const PASSWORD_TOKEN_EXPIRY = 10; // 10 minutes
 class AuthController {
   //business auth
   async businessFormRegister(req: Request, res: Response) {
-    let { firstName, lastName, email, businessName, password, industry } =
-      req.body;
-    email = email.toLowerCase(); // Convert email to lowercase
-
-    const { error } = validators.createBusinessValidator(req.body);
+    const { error, data } = validators.createBusinessValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+
+    let { firstName, lastName, email, businessName, password, industry } = data;
+    console.log(data);
 
     const emailExists = await Business.findOne({ email });
     if (emailExists) {
       console.log(`${email} already exist, change the email.`);
       throw new Conflict(
         `${email} already exist, change the email.`,
-        "EXISTING_USER_EMAIL",
+        "EXISTING_USER_EMAIL"
       );
     }
 
@@ -60,7 +59,7 @@ class AuthController {
     if (existingBusiness) {
       throw new Conflict(
         `${businessName} already exists, choose another business name.`,
-        "SLUG_UNAVAILABLE",
+        "SLUG_UNAVAILABLE"
       );
     }
     // Generate QR code for the businessSlug
@@ -88,7 +87,7 @@ class AuthController {
 
     const { accessToken, refreshToken } = await generateAuthToken(
       business,
-      accountType,
+      accountType
     );
 
     const formattedBusiness = _.pick(business, businessFields);
@@ -112,20 +111,20 @@ class AuthController {
     if (!business) {
       throw new BadRequest(
         "Business account not found.",
-        "INVALID_REQUEST_PARAMETERS",
+        "INVALID_REQUEST_PARAMETERS"
       );
     }
     // Check if user account has been deleted
     if (business.deletedAt) {
       throw new Forbidden(
         "Your account is currently deleted. Contact support if this is by mistake.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
     if (business.accountType !== "Business") {
       throw new Forbidden(
         "Your account is not a business. Contact support if this is by mistake.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
 
@@ -133,14 +132,14 @@ class AuthController {
     if (business.authType.password !== null) {
       throw new Forbidden(
         "You have no password set; please sign in with a third-party provider, e.g. Google.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
 
     // Verify the provided password against the hashed password
     const isPasswordValid = await bcrypt.compare(
       password,
-      business.authType.password,
+      business.authType.password
     );
     if (!isPasswordValid) {
       throw new Unauthorized("Invalid password.", "INVALID_PASSWORD");
@@ -148,7 +147,7 @@ class AuthController {
 
     const { accessToken, refreshToken } = await generateAuthToken(
       business,
-      "Business",
+      "Business"
     );
     const formattedBusiness = _.pick(business, businessFields);
 
@@ -173,7 +172,7 @@ class AuthController {
       console.log(`${email} already exist, change the email.`);
       throw new Conflict(
         `${email} already exist, change the email.`,
-        "EXISTING_USER_EMAIL",
+        "EXISTING_USER_EMAIL"
       );
     }
     const accountType = "Buyer";
@@ -192,7 +191,7 @@ class AuthController {
 
     const { accessToken, refreshToken } = await generateAuthToken(
       buyer,
-      accountType,
+      accountType
     );
 
     const formattedBuyer = _.pick(buyer, buyerFields);
@@ -216,20 +215,20 @@ class AuthController {
     if (!buyer) {
       throw new BadRequest(
         "buyer account not found.",
-        "INVALID_REQUEST_PARAMETERS",
+        "INVALID_REQUEST_PARAMETERS"
       );
     }
     // Check if user account has been deleted
     if (buyer.deletedAt) {
       throw new Forbidden(
         "Your account is currently deleted. Contact support if this is by mistake.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
     if (buyer.accountType !== "Buyer") {
       throw new Forbidden(
         "Your account is not a buyer. Contact support if this is by mistake.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
 
@@ -237,14 +236,14 @@ class AuthController {
     if (buyer.authType.password !== null) {
       throw new Forbidden(
         "You have no password set; please sign in with a third-party provider, e.g. Google.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
 
     // Verify the provided password against the hashed password
     const isPasswordValid = await bcrypt.compare(
       password,
-      buyer.authType.password,
+      buyer.authType.password
     );
     if (!isPasswordValid) {
       throw new Unauthorized("Invalid password.", "INVALID_PASSWORD");
@@ -252,7 +251,7 @@ class AuthController {
 
     const { accessToken, refreshToken } = await generateAuthToken(
       buyer,
-      "Buyer",
+      "Buyer"
     );
     const formattedBuyer = _.pick(buyer, buyerFields);
 
@@ -276,7 +275,7 @@ class AuthController {
       console.log(`${email} already exist, change the email.`);
       throw new Conflict(
         `${email} already exist, change the email.`,
-        "EXISTING_USER_EMAIL",
+        "EXISTING_USER_EMAIL"
       );
     }
     const accountType = "Admin";
@@ -292,7 +291,7 @@ class AuthController {
 
     const { accessToken, refreshToken } = await generateAuthToken(
       admin,
-      accountType,
+      accountType
     );
 
     const formattedAdmin = _.pick(admin, adminFields);
@@ -316,20 +315,20 @@ class AuthController {
     if (!admin) {
       throw new BadRequest(
         "buyer account not found.",
-        "INVALID_REQUEST_PARAMETERS",
+        "INVALID_REQUEST_PARAMETERS"
       );
     }
     // Check if user account has been deleted
     if (admin.deletedAt) {
       throw new Forbidden(
         "Your account is currently deleted. Contact support if this is by mistake.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
     if (admin.accountType !== "Admin") {
       throw new Forbidden(
         "Your account is not a admin. Contact support if this is by mistake.",
-        "ACCESS_DENIED",
+        "ACCESS_DENIED"
       );
     }
 
@@ -341,7 +340,7 @@ class AuthController {
 
     const { accessToken, refreshToken } = await generateAuthToken(
       admin,
-      "Admin",
+      "Admin"
     );
     const formattedAdmin = _.pick(admin, adminFields);
 
@@ -369,7 +368,7 @@ class AuthController {
       if (buyer.authType.password === undefined) {
         throw new BadRequest(
           "Cannot reset password for non-Form login account, continue with another option",
-          "INVALID_REQUEST_PARAMETERS",
+          "INVALID_REQUEST_PARAMETERS"
         );
       }
 
@@ -400,7 +399,7 @@ class AuthController {
       if (business.authType.password === undefined) {
         throw new BadRequest(
           "Cannot reset password for non-Form login account, continue with another option",
-          "INVALID_REQUEST_PARAMETERS",
+          "INVALID_REQUEST_PARAMETERS"
         );
       }
 
@@ -425,14 +424,14 @@ class AuthController {
     } else {
       throw new BadRequest(
         "Invalid account type",
-        "INVALID_REQUEST_PARAMETERS",
+        "INVALID_REQUEST_PARAMETERS"
       );
     }
   }
 
   async verifyUserOtpResetPassword(req: Request, res: Response) {
     const { otp, accountType } = req.query;
-    
+
     // Cast the req.query object to the expected payload structure
     const verifyTokenPayload = {
       otp: otp as string,
@@ -466,7 +465,7 @@ class AuthController {
         return res.error(
           400,
           "OTP Expired, request a new one",
-          "EXPIRED_TOKEN",
+          "EXPIRED_TOKEN"
         );
       }
 
@@ -482,7 +481,7 @@ class AuthController {
       const userTimezone = moment.tz.guess();
       const now = moment.tz(userTimezone);
       const otpExpired = now.isAfter(
-        business?.passwordRecovery?.passwordRecoveryOtpExpiresAt,
+        business?.passwordRecovery?.passwordRecoveryOtpExpiresAt
       );
 
       // Handle expired OTP
@@ -495,7 +494,7 @@ class AuthController {
         return res.error(
           400,
           "OTP Expired, request a new one",
-          "EXPIRED_TOKEN",
+          "EXPIRED_TOKEN"
         );
       }
 
@@ -503,31 +502,34 @@ class AuthController {
     } else {
       throw new BadRequest(
         "Invalid account type",
-        "INVALID_REQUEST_PARAMETERS",
+        "INVALID_REQUEST_PARAMETERS"
       );
     }
   }
 
   async verifyUserOtpAndChangePassword(req: Request, res: Response) {
     const { otp, newPassword, accountType } = req.body;
-  
-    const { error } = validators.verifyUserOtpAndChangePasswordValidator(req.body);
+
+    const { error } = validators.verifyUserOtpAndChangePasswordValidator(
+      req.body
+    );
     if (error) throw new BadRequest(error.message, error.code);
-  
+
     if (accountType === "Buyer") {
       const buyer = await Buyer.findOne({
         "passwordRecovery.passwordRecoveryOtp": otp,
         accountType: accountType, // Assuming you have an accountType field in your schema
       });
-  
-      if (!buyer) throw new BadRequest("Invalid OTP", "INVALID_REQUEST_PARAMETERS");
+
+      if (!buyer)
+        throw new BadRequest("Invalid OTP", "INVALID_REQUEST_PARAMETERS");
 
       const userTimezone = moment.tz.guess();
-      const now = moment.tz(userTimezone);      
+      const now = moment.tz(userTimezone);
       const otpExpired = now.isAfter(
         buyer?.passwordRecovery?.passwordRecoveryOtpExpiresAt
       );
-  
+
       // Handle expired OTP
       if (otpExpired) {
         buyer.passwordRecovery = {
@@ -535,7 +537,11 @@ class AuthController {
           passwordRecoveryOtpExpiresAt: undefined,
         };
         await buyer.save();
-        return res.error(400, "OTP Expired, request a new one", "EXPIRED_TOKEN");
+        return res.error(
+          400,
+          "OTP Expired, request a new one",
+          "EXPIRED_TOKEN"
+        );
       } else {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         buyer.authType.password = hashedPassword;
@@ -551,15 +557,16 @@ class AuthController {
         "passwordRecovery.passwordRecoveryOtp": otp,
         accountType: accountType, // Assuming you have an accountType field in your schema
       });
-  
-      if (!business) throw new BadRequest("Invalid OTP", "INVALID_REQUEST_PARAMETERS");
+
+      if (!business)
+        throw new BadRequest("Invalid OTP", "INVALID_REQUEST_PARAMETERS");
 
       const userTimezone = moment.tz.guess();
-      const now = moment.tz(userTimezone);      
+      const now = moment.tz(userTimezone);
       const otpExpired = now.isAfter(
         business?.passwordRecovery?.passwordRecoveryOtpExpiresAt
       );
-  
+
       // Handle expired OTP
       if (otpExpired) {
         business.passwordRecovery = {
@@ -567,7 +574,11 @@ class AuthController {
           passwordRecoveryOtpExpiresAt: undefined,
         };
         await business.save();
-        return res.error(400, "OTP Expired, request a new one", "EXPIRED_TOKEN");
+        return res.error(
+          400,
+          "OTP Expired, request a new one",
+          "EXPIRED_TOKEN"
+        );
       } else {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         business.authType.password = hashedPassword;
@@ -578,13 +589,12 @@ class AuthController {
         await business.save();
         res.ok({ message: "Password changed successfully" });
       }
-    }else {
+    } else {
       throw new BadRequest(
         "Invalid account type",
         "INVALID_REQUEST_PARAMETERS"
       );
     }
-
   }
 
   //General Refresh Token and Logout for users and Admin
@@ -592,7 +602,7 @@ class AuthController {
     const { refreshToken, accountType } = req.body;
     let payload, accessToken;
     const { error } = validators.tokenValidator(req.body);
-    if (error) throw new BadRequest(error.message,  error.code);
+    if (error) throw new BadRequest(error.message, error.code);
 
     interface result {
       buyerId?: string;
@@ -627,15 +637,21 @@ class AuthController {
         expiresIn: "1h",
       });
     } else {
-      throw new Unauthorized("Account type is not valid for refreshing token", "INVALID_TOKEN");
+      throw new Unauthorized(
+        "Account type is not valid for refreshing token",
+        "INVALID_TOKEN"
+      );
     }
-    res.ok({ accessToken, message: `New Access token created successfully for the ${accountType}` });
+    res.ok({
+      accessToken,
+      message: `New Access token created successfully for the ${accountType}`,
+    });
   }
 
   async logout(req: Request, res: Response) {
     const { refreshToken, accountType } = req.body;
     const { error } = validators.tokenValidator(req.body);
-    if (error) throw new BadRequest(error.message,  error.code);
+    if (error) throw new BadRequest(error.message, error.code);
 
     if (accountType === "Buyer") {
       const loggedBuyer = await Buyer.findOneAndUpdate(
@@ -643,23 +659,23 @@ class AuthController {
         { refreshToken: "" },
         { new: true }
       );
-  
+
       if (!loggedBuyer) {
         throw new Unauthorized("You are not logged in", "INVALID_TOKEN");
       }
-  
+
       res.ok({ message: "Logged Out Successfully" });
     } else if (accountType === "Business") {
-      const loggedBusiness= await Business.findOneAndUpdate(
+      const loggedBusiness = await Business.findOneAndUpdate(
         { refreshToken: refreshToken },
         { refreshToken: "" },
         { new: true }
       );
-  
+
       if (!loggedBusiness) {
         throw new Unauthorized("You are not logged in", "INVALID_TOKEN");
       }
-  
+
       res.ok({ message: "Logged Out Successfully" });
     } else if (accountType === "Admin") {
       const loggedAdmin = await Admin.findOneAndUpdate(
@@ -667,19 +683,16 @@ class AuthController {
         { refreshToken: "" },
         { new: true }
       );
-  
+
       if (!loggedAdmin) {
         throw new Unauthorized("You are not logged in", "INVALID_TOKEN");
       }
-  
+
       res.ok({ message: "Logged Out Successfully" });
     } else {
       throw new Error("Invalid account type provided");
     }
-
   }
-
-
 
   async loggedInAccount(req: Request, res: Response) {
     const loggedInAccount = req.loggedInAccount;

@@ -49,19 +49,23 @@ export const createBusinessValidator = (payload: CreateBusinessPayload) => {
     lastName: z.string({
       required_error: "Last name is required.",
     }),
-    email: z.string({
-      required_error: "Email is required.",
-      invalid_type_error: "Please provide a valid email.",
-    }),
+    email: z
+      .string({
+        required_error: "Email is required.",
+        invalid_type_error: "Please provide a valid email.",
+      })
+      .toLowerCase(),
     businessName: z.string({
       required_error: "business name is required.",
     }),
     industry: z.string({
       required_error: "industry is required.",
     }),
-    password: z.string({
-      required_error: "Password is required.",
-    }).min(8, "Password must be minimum of 8 characters."),
+    password: z
+      .string({
+        required_error: "Password is required.",
+      })
+      .min(8, "Password must be minimum of 8 characters."),
   });
 
   return validateRequestBody(schema, payload);
@@ -96,7 +100,6 @@ interface CreateAdminPayload {
   email: string;
   password: string;
 }
-
 
 export const createAdminValidator = (payload: CreateAdminPayload) => {
   const schema = z.object({
@@ -200,7 +203,9 @@ interface VerifyUserOtpAndChangePasswordPayload {
   accountType: "Buyer" | "Business";
 }
 
-export const verifyUserOtpAndChangePasswordValidator = (payload: VerifyUserOtpAndChangePasswordPayload) => {
+export const verifyUserOtpAndChangePasswordValidator = (
+  payload: VerifyUserOtpAndChangePasswordPayload
+) => {
   const schema = z.object({
     otp: z.string({
       required_error: "Otp is required.",
@@ -237,10 +242,11 @@ export const updateBuyerValidator = (payload: UpdateBuyerValidatorPayload) => {
 interface ChangePasswordValidatorPayload {
   oldPassword: string;
   newPassword: string;
-
 }
 
-export const changePasswordValidator = (payload: ChangePasswordValidatorPayload) => {
+export const changePasswordValidator = (
+  payload: ChangePasswordValidatorPayload
+) => {
   const schema = z.object({
     oldPassword: z.string({
       required_error: "new Password is required.",
@@ -252,9 +258,6 @@ export const changePasswordValidator = (payload: ChangePasswordValidatorPayload)
 
   return validateRequestBody(schema, payload);
 };
-
-
-
 
 // export const createBuyerValidator = (payload: any) => {
 //   const schema = z.object({
