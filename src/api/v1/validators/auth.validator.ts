@@ -216,6 +216,43 @@ export const verifyUserOtpAndChangePasswordValidator = (payload: VerifyUserOtpAn
   return validateRequestBody(schema, payload);
 };
 
+interface UpdateBuyerValidatorPayload {
+  firstName: string;
+  lastName: string;
+  addressBook: string;
+  phoneNumber: string;
+}
+
+export const updateBuyerValidator = (payload: UpdateBuyerValidatorPayload) => {
+  const schema = z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    addressBook: z.string().optional(),
+    phoneNumber: z.string().optional(),
+  });
+
+  return validateRequestBody(schema, payload);
+};
+
+interface ChangePasswordValidatorPayload {
+  oldPassword: string;
+  newPassword: string;
+
+}
+
+export const changePasswordValidator = (payload: ChangePasswordValidatorPayload) => {
+  const schema = z.object({
+    oldPassword: z.string({
+      required_error: "new Password is required.",
+    }),
+    newPassword: z.string({
+      required_error: "new Password is required.",
+    }),
+  });
+
+  return validateRequestBody(schema, payload);
+};
+
 
 
 

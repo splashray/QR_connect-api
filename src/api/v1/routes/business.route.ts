@@ -1,16 +1,16 @@
 import express from "express";
 
-// import controller from "../controllers/admin.controller";
+// import controller from "../controllers/business.controller";
 // import { auth } from "../../middlewares/authMiddleware";
 
 const router = express.Router();
 
 // router.get("/:id",  
 //   auth({ accountType: ["Admin"] }),
-//   controller.getAdminById);
+//   controller.getBusinessById);
 
 // router.get("/all",  
 //   auth({ accountType: ["Admin"] }),
-//   controller.getAllAdmin);
+//   controller.getAllBusiness);
 
 export default router;
