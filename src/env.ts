@@ -10,6 +10,8 @@ export const envSchema = z.object({
   MAILGUN_API_KEY: z.string(),
   MAILGUN_DOMAIN: z.string(),
   MAILGUN_SENDER_EMAIL: z.string().email(),
+  JWT_SEC: z.string(),
+  REFRESH_TOKEN: z.string()
 });
 
 try {

@@ -1,9 +1,12 @@
+/* eslint-disable no-inner-declarations */
+/* eslint-disable prefer-const */
 import { Request, Response } from "express";
 import * as bcrypt from "bcrypt";
 import slugify from "slugify";
 import _ from "lodash";
 import * as moment from "moment-timezone";
 import qrcode from "qrcode";
+import jwt from "jsonwebtoken";
 
 import {
   BadRequest,
@@ -102,6 +105,7 @@ class AuthController {
     let { email, password } = req.body;
     email = email.toLowerCase(); // Convert email to lowercase
     const { error } = validators.loginValidator(req.body);
+    if (error) throw new BadRequest(error.message, error.code);
 
     // Check if a business with the provided email exists
     const business = await Business.findOne({ email });
@@ -205,6 +209,7 @@ class AuthController {
     let { email, password } = req.body;
     email = email.toLowerCase(); // Convert email to lowercase
     const { error } = validators.loginValidator(req.body);
+    if (error) throw new BadRequest(error.message, error.code);
 
     // Check if a buyer with the provided email exists
     const buyer = await Buyer.findOne({ email });
@@ -382,7 +387,7 @@ class AuthController {
       };
       await buyer.save();
 
-      const otp = buyer.passwordRecovery.passwordRecoveryOtp;
+      // const otp = buyer.passwordRecovery.passwordRecoveryOtp;
       // await resetPasswordEmail(email, buyer.firstName, otp);
 
       res.ok({ message: `New reset password Otp sent to ${email}` });
@@ -413,7 +418,7 @@ class AuthController {
 
       await business.save();
 
-      const otp = business.passwordRecovery.passwordRecoveryOtp;
+      // const otp = business.passwordRecovery.passwordRecoveryOtp;
       // await resetPasswordEmail(email, business.firstName, otp);
 
       res.ok({ message: `New reset password Otp sent to ${email}` });
@@ -427,7 +432,14 @@ class AuthController {
 
   async verifyUserOtpResetPassword(req: Request, res: Response) {
     const { otp, accountType } = req.query;
-    const { error } = validators.verifyTokenValidator(req.query);
+    
+    // Cast the req.query object to the expected payload structure
+    const verifyTokenPayload = {
+      otp: otp as string,
+      accountType: accountType as "Buyer" | "Business",
+    };
+
+    const { error } = validators.verifyTokenValidator(verifyTokenPayload);
     if (error) throw new BadRequest(error.message, error.code);
 
     if (accountType === "Buyer") {
@@ -441,7 +453,7 @@ class AuthController {
       const userTimezone = moment.tz.guess();
       const now = moment.tz(userTimezone);
       const otpExpired = now.isAfter(
-        buyer.passwordRecovery.passwordRecoveryOtpExpiresAt,
+        buyer?.passwordRecovery?.passwordRecoveryOtpExpiresAt
       );
 
       // Handle expired OTP
@@ -470,7 +482,7 @@ class AuthController {
       const userTimezone = moment.tz.guess();
       const now = moment.tz(userTimezone);
       const otpExpired = now.isAfter(
-        business.passwordRecovery.passwordRecoveryOtpExpiresAt,
+        business?.passwordRecovery?.passwordRecoveryOtpExpiresAt,
       );
 
       // Handle expired OTP
@@ -496,111 +508,196 @@ class AuthController {
     }
   }
 
-  // async verifyUserOtpAndChangePassword(req: Request, res: Response) {
-  //   const { otp, newPassword } = req.body;
+  async verifyUserOtpAndChangePassword(req: Request, res: Response) {
+    const { otp, newPassword, accountType } = req.body;
+  
+    const { error } = validators.verifyUserOtpAndChangePasswordValidator(req.body);
+    if (error) throw new BadRequest(error.message, error.code);
+  
+    if (accountType === "Buyer") {
+      const buyer = await Buyer.findOne({
+        "passwordRecovery.passwordRecoveryOtp": otp,
+        accountType: accountType, // Assuming you have an accountType field in your schema
+      });
+  
+      if (!buyer) throw new BadRequest("Invalid OTP", "INVALID_REQUEST_PARAMETERS");
 
-  //   const { error } = validator.verifyUserOtpAndChangePasswordSchema.validate(req.body);
-  //   if (error) throw new BadRequest(error.message, INVALID_REQUEST_PARAMETERS);
+      const userTimezone = moment.tz.guess();
+      const now = moment.tz(userTimezone);      
+      const otpExpired = now.isAfter(
+        buyer?.passwordRecovery?.passwordRecoveryOtpExpiresAt
+      );
+  
+      // Handle expired OTP
+      if (otpExpired) {
+        buyer.passwordRecovery = {
+          passwordRecoveryOtp: undefined,
+          passwordRecoveryOtpExpiresAt: undefined,
+        };
+        await buyer.save();
+        return res.error(400, "OTP Expired, request a new one", "EXPIRED_TOKEN");
+      } else {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        buyer.authType.password = hashedPassword;
+        buyer.passwordRecovery = {
+          passwordRecoveryOtp: undefined,
+          passwordRecoveryOtpExpiresAt: undefined,
+        };
+        await buyer.save();
+        res.ok({ message: "Password changed successfully" });
+      }
+    } else if (accountType === "Business") {
+      const business = await Business.findOne({
+        "passwordRecovery.passwordRecoveryOtp": otp,
+        accountType: accountType, // Assuming you have an accountType field in your schema
+      });
+  
+      if (!business) throw new BadRequest("Invalid OTP", "INVALID_REQUEST_PARAMETERS");
 
-  //   const user = await User.findOne({ "passwordRecovery.passwordRecoveryOtp": otp });
+      const userTimezone = moment.tz.guess();
+      const now = moment.tz(userTimezone);      
+      const otpExpired = now.isAfter(
+        business?.passwordRecovery?.passwordRecoveryOtpExpiresAt
+      );
+  
+      // Handle expired OTP
+      if (otpExpired) {
+        business.passwordRecovery = {
+          passwordRecoveryOtp: undefined,
+          passwordRecoveryOtpExpiresAt: undefined,
+        };
+        await business.save();
+        return res.error(400, "OTP Expired, request a new one", "EXPIRED_TOKEN");
+      } else {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        business.authType.password = hashedPassword;
+        business.passwordRecovery = {
+          passwordRecoveryOtp: undefined,
+          passwordRecoveryOtpExpiresAt: undefined,
+        };
+        await business.save();
+        res.ok({ message: "Password changed successfully" });
+      }
+    }else {
+      throw new BadRequest(
+        "Invalid account type",
+        "INVALID_REQUEST_PARAMETERS"
+      );
+    }
 
-  //   if (!user) throw new ResourceNotFound("Invalid OTP", EXPIRED_TOKEN);
+  }
 
-  //   const now = moment();
-  //   const otpExpired = now.isAfter(user.passwordRecovery.passwordRecoveryOtpExpiresAt);
+  //General Refresh Token and Logout for users and Admin
+  async refreshToken(req: Request, res: Response) {
+    const { refreshToken, accountType } = req.body;
+    let payload, accessToken;
+    const { error } = validators.tokenValidator(req.body);
+    if (error) throw new BadRequest(error.message,  error.code);
 
-  //   // Handle expired OTP
-  //   if (otpExpired) {
-  //     user.passwordRecovery = {
-  //       passwordRecoveryOtp: null,
-  //       passwordRecoveryOtpExpiresAt: null,
-  //     };
-  //     await user.save();
-  //     return res.error(400, "OTP Expired, request a new one", EXPIRED_TOKEN);
-  //   } else {
-  //     const hashedPassword = await bcrypt.hash(newPassword, 10);
-  //     user.authType.password = hashedPassword;
-  //     user.passwordRecovery = {
-  //       passwordRecoveryOtp: null,
-  //       passwordRecoveryOtpExpiresAt: null,
-  //     };
-  //     await user.save();
-  //     res.ok({ message: "Password changed successfully" });
-  //   }
-  // }
+    interface result {
+      buyerId?: string;
+      businessId?: string;
+      adminId?: string;
+      // ... Other possible properties ...
+    }
 
-  // //General Refresh Token and Logout for users and Admin
-  // async refreshToken(req: Request, res: Response) {
-  //   const { refreshToken, accountType } = req.body;
-  //   let payload, accessToken;
-  //   const { error } = validators.tokenValidator(req.body);
-  //   if (error) throw new BadRequest(error.message, "MISSING_REQUIRED_FIELD");
+    // Specify the type of the returned value from verifyRefreshToken
+    const result = await verifyRefreshToken(refreshToken, accountType);
 
-  //   const { tokenDetails } = await verifyRefreshToken(refreshToken, accountType);
+    // Cast result to the expected type TokenDetails
+    const tokenDetails = result as result;
+    if (!tokenDetails) {
+      console.log(tokenDetails);
+      throw new Unauthorized("Can't validate Refresh token", "INVALID_TOKEN");
+    }
 
-  //   if (!tokenDetails) {
-  //     console.log(tokenDetails);
-  //     throw new Unauthorized("Can't validate Refresh token", "INVALID_TOKEN");
-  //   }
+    if (accountType === "Buyer") {
+      payload = { buyerId: tokenDetails.buyerId };
+      accessToken = jwt.sign(payload, process.env.JWT_SEC, {
+        expiresIn: "24h",
+      });
+    } else if (accountType === "Business") {
+      payload = { businessId: tokenDetails.businessId };
+      accessToken = jwt.sign(payload, process.env.JWT_SEC, {
+        expiresIn: "14h",
+      });
+    } else if (accountType === "Admin") {
+      payload = { adminId: tokenDetails.adminId };
+      accessToken = jwt.sign(payload, process.env.JWT_SEC, {
+        expiresIn: "1h",
+      });
+    } else {
+      throw new Unauthorized("Account type is not valid for refreshing token", "INVALID_TOKEN");
+    }
+    res.ok({ accessToken, message: `New Access token created successfully for the ${accountType}` });
+  }
 
-  //   if (accountType === "User") {
-  //     payload = { userId: tokenDetails.userId };
-  //     accessToken = jwt.sign(payload, process.env.JWT_SEC, {
-  //       expiresIn: "24h",
-  //     });
-  //   } else if (accountType === "Admin") {
-  //     payload = { adminId: tokenDetails.adminId };
-  //     accessToken = jwt.sign(payload, process.env.JWT_SEC, {
-  //       expiresIn: "1h",
-  //     });
-  //   } else {
-  //     throw new BadRequest("Account type is not valid for refreshing token", INVALID_TOKEN);
-  //   }
-  //   res.ok({ accessToken, message: `New Access token created successfully for the ${accountType}` });
-  // }
+  async logout(req: Request, res: Response) {
+    const { refreshToken, accountType } = req.body;
+    const { error } = validators.tokenValidator(req.body);
+    if (error) throw new BadRequest(error.message,  error.code);
 
-  // async logout(req: Request, res: Response) {
-  //   const { refreshToken, accountType } = req.body;
-  //   let Model;
+    if (accountType === "Buyer") {
+      const loggedBuyer = await Buyer.findOneAndUpdate(
+        { refreshToken: refreshToken },
+        { refreshToken: "" },
+        { new: true }
+      );
+  
+      if (!loggedBuyer) {
+        throw new Unauthorized("You are not logged in", "INVALID_TOKEN");
+      }
+  
+      res.ok({ message: "Logged Out Successfully" });
+    } else if (accountType === "Business") {
+      const loggedBusiness= await Business.findOneAndUpdate(
+        { refreshToken: refreshToken },
+        { refreshToken: "" },
+        { new: true }
+      );
+  
+      if (!loggedBusiness) {
+        throw new Unauthorized("You are not logged in", "INVALID_TOKEN");
+      }
+  
+      res.ok({ message: "Logged Out Successfully" });
+    } else if (accountType === "Admin") {
+      const loggedAdmin = await Admin.findOneAndUpdate(
+        { refreshToken: refreshToken },
+        { refreshToken: "" },
+        { new: true }
+      );
+  
+      if (!loggedAdmin) {
+        throw new Unauthorized("You are not logged in", "INVALID_TOKEN");
+      }
+  
+      res.ok({ message: "Logged Out Successfully" });
+    } else {
+      throw new Error("Invalid account type provided");
+    }
 
-  //   const { error } = validators.tokenValidator(req.body);
-  //   if (error) throw new BadRequest(error.message, MISSING_REQUIRED_FIELD);
+  }
 
-  //   if (accountType === "User") {
-  //     Model = User;
-  //   } else if (accountType === "Admin") {
-  //     Model = Admin;
-  //   } else {
-  //     throw new Error("Invalid account type provided");
-  //   }
 
-  //   const loggedUser = await Model.findOneAndUpdate(
-  //     { refreshToken: refreshToken },
-  //     { refreshToken: "" },
-  //     { new: true }
-  //   );
 
-  //   if (!loggedUser) {
-  //     throw new BadRequest("You are not logged in", INVALID_REQUEST_PARAMETERS);
-  //   }
+  async loggedInAccount(req: Request, res: Response) {
+    const loggedInAccount = req.loggedInAccount;
 
-  //   res.ok({ message: "Logged Out Successfully" });
-  // }
+    let formattedAccount;
+    if (loggedInAccount.accountType === "Buyer") {
+      formattedAccount = _.pick(loggedInAccount, buyerFields);
+    } else if (loggedInAccount.accountType === "Business") {
+      formattedAccount = _.pick(loggedInAccount, businessFields);
+    } else {
+      formattedAccount = _.pick(loggedInAccount, adminFields);
+    }
 
-  // async loggedInAccount(req: Request, res: Response) {
-  //   const loggedInAccount = req.loggedInAccount;
-
-  //   let formattedAccount;
-  //   if(loggedInAccount.accountType === "User"){
-  //     formattedAccount = _.pick(loggedInAccount, userFields);
-  //   }else{
-  //     formattedAccount = _.pick(loggedInAccount, adminFields);
-  //   }
-
-  //   res.ok({ loggedInAccount: formattedAccount,
-  //     message: "current Loggedin Credential retrieved"
-  //   });
-  // }
+    res.ok({
+      loggedInAccount: formattedAccount,
+      message: "Current Logged-in Credential retrieved",
+    });
+  }
 }
 
 export default new AuthController();

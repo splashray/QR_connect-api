@@ -1,7 +1,16 @@
 import { z } from "zod";
 import { validateRequestBody } from "../../../utils/zodHelpers";
 
-export const createBuyerValidator = (payload: any) => {
+interface CreateBuyerPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  authType: {
+    password: string;
+  };
+}
+
+export const createBuyerValidator = (payload: CreateBuyerPayload) => {
   const schema = z.object({
     firstName: z.string({
       required_error: "First name is required.",
@@ -24,8 +33,15 @@ export const createBuyerValidator = (payload: any) => {
 
   return validateRequestBody(schema, payload);
 };
-
-export const createBusinessValidator = (payload: any) => {
+interface CreateBusinessPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  businessName: string;
+  industry: string;
+  password: string;
+}
+export const createBusinessValidator = (payload: CreateBusinessPayload) => {
   const schema = z.object({
     firstName: z.string({
       required_error: "First name is required.",
@@ -43,19 +59,21 @@ export const createBusinessValidator = (payload: any) => {
     industry: z.string({
       required_error: "industry is required.",
     }),
-    authType: z.object({
-      password: z
-        .string({
-          required_error: "Password is required.",
-        })
-        .min(8, "Password must be minimum of 8 characters."),
-    }),
+    password: z.string({
+      required_error: "Password is required.",
+    }).min(8, "Password must be minimum of 8 characters."),
   });
 
   return validateRequestBody(schema, payload);
 };
+interface LoginPayload {
+  email: string;
+  authType: {
+    password: string;
+  };
+}
 
-export const loginValidator = (payload: any) => {
+export const loginValidator = (payload: LoginPayload) => {
   const schema = z.object({
     email: z.string({
       required_error: "Email is required.",
@@ -73,7 +91,14 @@ export const loginValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
-export const createAdminValidator = (payload: any) => {
+interface CreateAdminPayload {
+  username: string;
+  email: string;
+  password: string;
+}
+
+
+export const createAdminValidator = (payload: CreateAdminPayload) => {
   const schema = z.object({
     username: z.string({
       required_error: "username is required.",
@@ -94,7 +119,12 @@ export const createAdminValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
-export const adminValidator = (payload: any) => {
+interface AdminPayload {
+  email: string;
+  password: string;
+}
+
+export const adminValidator = (payload: AdminPayload) => {
   const schema = z.object({
     email: z.string({
       required_error: "Email is required.",
@@ -110,7 +140,12 @@ export const adminValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
-export const tokenValidator = (payload: any) => {
+interface TokenPayload {
+  refreshToken: string;
+  accountType: "Buyer" | "Business";
+}
+
+export const tokenValidator = (payload: TokenPayload) => {
   const schema = z.object({
     refreshToken: z.string({
       required_error: "Refresh Token is required.",
@@ -123,7 +158,12 @@ export const tokenValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
-export const resetTokenValidator = (payload: any) => {
+interface ResetTokenPayload {
+  email: string;
+  accountType: "Buyer" | "Business";
+}
+
+export const resetTokenValidator = (payload: ResetTokenPayload) => {
   const schema = z.object({
     email: z.string({
       required_error: "Email is required.",
@@ -136,8 +176,12 @@ export const resetTokenValidator = (payload: any) => {
 
   return validateRequestBody(schema, payload);
 };
+interface VerifyTokenPayload {
+  otp: string;
+  accountType: "Buyer" | "Business";
+}
 
-export const verifyTokenValidator = (payload: any) => {
+export const verifyTokenValidator = (payload: VerifyTokenPayload) => {
   const schema = z.object({
     otp: z.string({
       required_error: "Otp is required.",
@@ -149,6 +193,31 @@ export const verifyTokenValidator = (payload: any) => {
 
   return validateRequestBody(schema, payload);
 };
+
+interface VerifyUserOtpAndChangePasswordPayload {
+  otp: string;
+  newPassword: string;
+  accountType: "Buyer" | "Business";
+}
+
+export const verifyUserOtpAndChangePasswordValidator = (payload: VerifyUserOtpAndChangePasswordPayload) => {
+  const schema = z.object({
+    otp: z.string({
+      required_error: "Otp is required.",
+    }),
+    newPassword: z.string({
+      required_error: "new Password is required.",
+    }),
+    accountType: z.enum(["Buyer", "Business"], {
+      required_error: "Account Type is required.",
+    }),
+  });
+
+  return validateRequestBody(schema, payload);
+};
+
+
+
 
 // export const createBuyerValidator = (payload: any) => {
 //   const schema = z.object({

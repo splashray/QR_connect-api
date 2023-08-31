@@ -1,60 +1,204 @@
-// import { NextFunction, Request, Response } from "express";
-// import { Unauthorized } from "../../errors/httpErrors";
-// import jwt, { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
-// import * as dotenv from "dotenv";
-// import db from "../../db";
-// import { users } from "../../db/schema";
-// import { eq } from "drizzle-orm";
-// dotenv.config();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Request, Response, NextFunction } from "express";
+import { Unauthorized, Forbidden } from "../../errors/httpErrors";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import Admin from "../../db/models/admin.model";
+import Buyer from "../../db/models/buyer.model";
+import Business from "../../db/models/business.model";
+import * as dotenv from "dotenv";
+dotenv.config();
 
-// export async function requireAuth(
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) {
-//   try {
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//       return next(
-//         new Unauthorized("Missing Auth header", "MISSING_AUTH_HEADER")
-//       );
-//     }
+interface AuthOptions {
+  accountType?: string[];
+  userType?: string[];
+  isAdmin?: boolean;
+}
 
-//     const token = authHeader.split(" ")[1];
-//     if (!token) {
-//       return next(new Unauthorized("Malformed token", "MALFORMED_TOKEN"));
-//     }
+type AccountType = "Admin" | "Buyer" | "Business";
 
-//     const payload = jwt.verify(token, process.env.CLERK_PEM_PUBLIC_KEY!, {
-//       ignoreNotBefore: true,
-//     }) as {
-//       clerkUserId: string;
-//     };
+type UserType = "Buyer" | "Business";
 
-//     const user = await db.query.users.findFirst({
-//       columns: { id: true, email: true },
-//       where: eq(users.clerkId, payload.clerkUserId),
-//     });
+type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
-//     if (!user) {
-//       return next(
-//         new Unauthorized(
-//           "User with this token no longer exists",
-//           "INVALID_TOKEN"
-//         )
-//       );
-//     }
+interface Buyer {
+  _id:mongoose.Types.ObjectId;
+  email: string;
+  firstName: string;
+  lastName: string;
+  addressBook: string;
+  phoneNumber: string;
 
-//     req.user = user;
-//     next();
-//   } catch (error: any) {
-//     console.log(error, "here");
-//     if (error instanceof TokenExpiredError) {
-//       next(new Unauthorized("Token expired", "EXPIRED_TOKEN"));
-//     } else if (error instanceof JsonWebTokenError) {
-//       next(new Unauthorized("Token invalid", "INVALID_TOKEN"));
-//     } else {
-//       next(error);
-//     }
-//   }
-// }
+  authType: {
+    password?: string;
+    googleUuid?: string;
+  };
+  accountType: AccountType;
+  userType: UserType;
+  profilePicture?: string;
+  isAdmin: boolean;
+  finishTourGuide: boolean;
+  passwordRecovery?: {
+    passwordRecoveryOtp?: string;
+    passwordRecoveryOtpExpiresAt?: Date;
+  };
+  refreshToken?: string;
+  deletedAt?: Date | null;
+}
+
+interface Business {
+    _id:mongoose.Types.ObjectId;
+  qrcode: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  businessName: string;
+  businessSlug: string;
+  industry: string;
+
+  authType: {
+    password?: string;
+    googleUuid?: string;
+  };
+  accountType: AccountType;
+  userType: UserType;
+  profilePicture?: string;
+  isAdmin: boolean;
+  finishTourGuide: boolean;
+  subscriptionStatus: SubscriptionStatus;
+  passwordRecovery?: {
+    passwordRecoveryOtp?: string;
+    passwordRecoveryOtpExpiresAt?: Date;
+  };
+  refreshToken?: string;
+  deletedAt?: Date | null;
+}
+
+interface Admin {
+ _id:mongoose.Types.ObjectId;
+  username: string;
+  email: string;
+  password: string;
+  accountType: AccountType;
+  userType: UserType;
+  profilePicture?: string;
+  isAdmin: boolean;
+  refreshToken?: string;
+  deletedAt?: Date | null;
+}
+
+type LoggedInAccount = Buyer | Business | Admin;
+
+const auth = (options: AuthOptions = {}) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return next(new Unauthorized("Missing Auth header", "MISSING_AUTH_HEADER"));
+    }
+
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return next(new Unauthorized("Malformed token", "MALFORMED_TOKEN"));
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SEC) as {
+          buyerId?: string;
+          businessId?: string;
+          adminId?: string;
+      };
+    } catch (error) {
+      throw new Unauthorized("Invalid or Expired Token", "INVALID_TOKEN");
+    }
+
+    let loggedInAccount: LoggedInAccount | null = null;
+    if (payload.buyerId) {
+      loggedInAccount = await Buyer.findById(payload.buyerId);
+    } else if (payload.businessId) {
+      loggedInAccount = await Business.findById(payload.businessId);
+    } else if (payload.adminId) {
+      loggedInAccount = await Admin.findById(payload.adminId);
+    } else {
+      throw new Unauthorized("User with this token no longer exists", "INVALID_TOKEN");
+    }
+  
+    req.loggedInAccount = loggedInAccount!;
+
+    handleAuthOptions(options, loggedInAccount!);
+
+    substituteUserFlag(req, loggedInAccount!);
+
+    protectUserResources(req, loggedInAccount!);
+
+    next();
+  };
+};
+
+function handleAuthOptions(options: AuthOptions, loggedInAccount:LoggedInAccount) {
+  if (options.accountType) {
+    if (!Array.isArray(options.accountType)) return;
+
+    const accountTypes = options.accountType.map((accountType) =>
+      accountType.toLowerCase()
+    );
+
+    if (!accountTypes.includes(loggedInAccount.accountType.toLowerCase())) {
+      const message = `${loggedInAccount.accountType} ${loggedInAccount._id} does not have permission to this resource`;
+      throw new Forbidden(message, "INSUFFICIENT_PERMISSIONS");
+    }
+  }
+
+  if (options.userType) {
+    if (!Array.isArray(options.userType)) return;
+
+    const userTypes = options.userType.map((userType) => userType.toLowerCase());
+
+    if (!userTypes.includes(loggedInAccount.userType.toLowerCase())) {
+      const message = `${loggedInAccount.userType} ${loggedInAccount._id} does not have permission to this resource`;
+      throw new Forbidden(message, "INSUFFICIENT_PERMISSIONS");
+    }
+  }
+
+  if (options.isAdmin) {
+    const hasAccess =
+      loggedInAccount.isAdmin === true &&
+      loggedInAccount.accountType.toLowerCase() === "admin";
+
+    if (!hasAccess) {
+      const message = `${loggedInAccount.accountType} ${loggedInAccount._id} does not have permission to this resource`;
+      throw new Forbidden(message, "INSUFFICIENT_PERMISSIONS");
+    }
+  }
+}
+
+function substituteUserFlag(req: Request, loggedInAccount: LoggedInAccount) {
+  const flag = "me";
+
+  if (!req.originalUrl.includes(`/auth/${flag}`)) return;
+
+  const results = req.path.match(/\/auth\/(\w+)/);
+
+  if (!results) return;
+  const paramName = results[1];
+
+  req.params[paramName] = loggedInAccount._id.toString();
+}
+
+function protectUserResources(req: Request, loggedInAccount:LoggedInAccount) {
+  const results = req.path.match(/\/auth\/(\w+)/);
+  if (!results) return;
+
+  const paramName = results[1];
+
+  const canAccess =
+    loggedInAccount._id.toString() === req.params[paramName] ||
+    loggedInAccount.accountType.toLowerCase() === "admin";
+
+  if (canAccess) return;
+
+  const message = `${loggedInAccount.accountType} ${loggedInAccount._id} doesn't have permission to access User ${req.params[paramName]}`;
+  throw new Forbidden(message, "ACCESS_DENIED");
+}
+
+export { auth };

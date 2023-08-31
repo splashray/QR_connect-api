@@ -1,7 +1,6 @@
 import axios from "axios";
 import dotenv from "dotenv";
 import { redisClient } from "../config/redis.config";
-import { ServerError } from "../errors/httpErrors";
 const BANK_CACHE_EXPIRATION = 60 * 60 * 24 * 1; // 1 day
 const RESOLUTION_CACHE_EXPIRATION = 60 * 15; // 15 minss
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import dotenv from "dotenv";
 dotenv.config();
 import Buyer from "../db/models/buyer.model";
@@ -6,7 +7,7 @@ import Business from "../db/models/business.model";
 
 import jwt from "jsonwebtoken";
 
-import { ResourceNotFound, Unauthorized } from "../errors/httpErrors";
+import { Unauthorized } from "../errors/httpErrors";
 
 interface AccountDetails {
   _id: string;
@@ -56,6 +57,7 @@ const generateAuthToken = async (
         expiresIn: "7d",
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       updatedDetails = await Business.findOneAndUpdate(
         { _id: accountDetails._id },
         { refreshToken, updatedAt: new Date() },

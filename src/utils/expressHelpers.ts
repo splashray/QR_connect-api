@@ -17,8 +17,8 @@ export function conditionalMiddleware(
 }
 
 export function paginate(
-  cursor: any,
-  perPage: any,
+  cursor: string,
+  perPage: number,
   maxPerPage: number = 100,
   defaultPerPage: number = 30,
 ) {
