@@ -79,6 +79,7 @@ class AuthController {
       industry,
       accountType,
       userType: "Business",
+      authMethod: "Form",
       authType: {
         password: hash,
       },
@@ -101,16 +102,16 @@ class AuthController {
   }
 
   async businessFormLogin(req: Request, res: Response) {
-    let { email, password } = req.body;
-    email = email.toLowerCase(); // Convert email to lowercase
-    const { error } = validators.loginValidator(req.body);
+    const { error, data } = validators.loginValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+
+    let { email, password } = data;
 
     // Check if a business with the provided email exists
     const business = await Business.findOne({ email });
     if (!business) {
       throw new BadRequest(
-        "Business account not found.",
+        "Invalid Business account credentials.",
         "INVALID_REQUEST_PARAMETERS"
       );
     }
@@ -128,27 +129,31 @@ class AuthController {
       );
     }
 
-    // Check if user has "value" on password as authType
-    if (business.authType.password !== null) {
+    // Check if the user has a password set in their authMethod
+    if (business.authMethod !== "Form") {
       throw new Forbidden(
         "You have no password set; please sign in with a third-party provider, e.g. Google.",
         "ACCESS_DENIED"
       );
     }
 
-    // Verify the provided password against the hashed password
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      business.authType.password
-    );
-    if (!isPasswordValid) {
-      throw new Unauthorized("Invalid password.", "INVALID_PASSWORD");
+    // Retrieve the hashed password from the user's business account
+    const hashedPassword = business.authType?.password;
+
+    // Check if hashedPassword is not undefined before using bcrypt.compareSync
+    if (hashedPassword !== undefined) {
+      const isPasswordValid = bcrypt.compareSync(password, hashedPassword);
+      if (!isPasswordValid) {
+        throw new Unauthorized("Invalid password.", "INVALID_PASSWORD");
+      }
+    } else {
+      throw new Forbidden(
+        "You have no password set; please sign in with a third-party provider, e.g. Google.",
+        "ACCESS_DENIED"
+      );
     }
 
-    const { accessToken, refreshToken } = await generateAuthToken(
-      business,
-      "Business"
-    );
+    const { accessToken, refreshToken } = await generateAuthToken(business, "Business");
     const formattedBusiness = _.pick(business, businessFields);
 
     return res.ok({

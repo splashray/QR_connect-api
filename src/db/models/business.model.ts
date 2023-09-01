@@ -2,6 +2,8 @@ import mongoose, { Document, Model } from "mongoose";
 
 type AccountType = "Admin" | "Buyer" | "Business";
 
+type authMethod = "Form" | "Google";
+
 type UserType = "Buyer" | "Business";
 
 type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
@@ -19,6 +21,7 @@ interface IBusiness extends Document {
     password?: string;
     googleUuid?: string;
   };
+  authMethod: authMethod;
   accountType: AccountType;
   userType: UserType;
   profilePicture?: string;
@@ -73,6 +76,11 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
       googleUuid: {
         type: String,
       },
+    },
+    authMethod: {
+      type: String,
+      required: true,
+      enum: ["Form", "Google"],
     },
     accountType: {
       type: String,

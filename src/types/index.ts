@@ -96,7 +96,7 @@ declare global {
 
    namespace Express {   
     interface Request {
-      loggedInAccount: Buyer | Business | Admin;
+      loggedInAccount: Business | Buyer | Admin;
     }
   }
   
