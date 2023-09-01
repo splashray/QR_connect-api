@@ -12,32 +12,35 @@ import bcrypt from "bcrypt";
 import { promises as fsPromises } from "fs";
 import path from "path";
 import { uploadPicture } from "../../../services/file.service";
-// import { getLimit, getPage, getStartDate, getEndDate } from "../utils/dataFilter.js";
+// import {
+//   getLimit,
+//   getPage,
+//   getStartDate,
+//   getEndDate,
+// } from "../utils/dataFilter.js";
 import { buyerFields } from "../../../utils/fieldHelpers";
 import * as validators from "../validators/auth.validator";
 
-
-interface AuthenticatedRequest extends Request {
-  loggedInAccount: {
-    id: string;
-    // authType: string;
-    // password: string;
-    // ... other properties that are used
-  };
-  files: {
-    profilePicture: {
-      [index: number]: {
-        originalname: string;
-        path: string;
-      };
-    };
-  };
-}
+// interface AuthenticatedRequest extends Request {
+//   loggedInAccount: {
+//     id: string;
+//     // authType: string;
+//     // password: string;
+//     // ... other properties that are used
+//   };
+//   files: {
+//     profilePicture: {
+//       [index: number]: {
+//         originalname: string;
+//         path: string;
+//       };
+//     };
+//   };
+// }
 
 class BuyerController {
-// Get all Buyers
-  async getBuyers(req: AuthenticatedRequest, res: Response) {
-
+  // Get all Buyers
+  async getBuyers(req: Request, res: Response) {
     const startDate = getStartDate(req.query.startDate);
     const endDate = getEndDate(req.query.endDate);
     const limit = getLimit(req.query.limit);
@@ -61,7 +64,7 @@ class BuyerController {
   }
 
   // Get a Buyer by ID
-  async getBuyerById(req: AuthenticatedRequest, res: Response) {
+  async getBuyerById(req: Request, res: Response) {
     const { buyerId } = req.params;
     if (!buyerId) {
       throw new ResourceNotFound("BuyerID is missing.", "RESOURCE_NOT_FOUND");
@@ -69,28 +72,34 @@ class BuyerController {
 
     const buyer = await Buyer.findById(buyerId).select(buyerFields.join(" "));
     if (!buyer) {
-      throw new ResourceNotFound(`Buyer with ID ${buyerId} not found.`, "RESOURCE_NOT_FOUND");
+      throw new ResourceNotFound(
+        `Buyer with ID ${buyerId} not found.`,
+        "RESOURCE_NOT_FOUND"
+      );
     }
 
     res.ok(buyer);
   }
 
   // Update a Buyer by ID
-  async updateBuyer(req: AuthenticatedRequest, res: Response) {
-    const buyerId = req.loggedInAccount.id;
-    const { firstName, lastName, addressBook, phoneNumber} = req.body;
+  async updateBuyer(req: Request, res: Response) {
+    const buyerId = req.loggedInAccount._id;
+    const { firstName, lastName, addressBook, phoneNumber } = req.body;
 
-    const { error } = validators.updateBuyerValidator.(req.body);
+    const { error } = validators.updateBuyerValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
 
     const buyer = await Buyer.findByIdAndUpdate(
       buyerId,
-      {firstName, lastName, addressBook, phoneNumber, updatedAt: new Date() },
+      { firstName, lastName, addressBook, phoneNumber, updatedAt: new Date() },
       { new: true }
     ).select(buyerFields.join(" "));
 
     if (!buyer) {
-      throw new ResourceNotFound(`Buyer ${buyerId} not found.`, "RESOURCE_NOT_FOUND");
+      throw new ResourceNotFound(
+        `Buyer ${buyerId} not found.`,
+        "RESOURCE_NOT_FOUND"
+      );
     }
 
     res.ok({
@@ -100,40 +109,48 @@ class BuyerController {
   }
 
   // Delete a Buyer by ID
-  async deleteBuyer(req:Request, res: Response) {
+  async deleteBuyer(req: Request, res: Response) {
     const buyerId = req.loggedInAccount._id;
 
-    await Buyer.findByIdAndUpdate(
-      buyerId,
-      { deletedAt: new Date(), updatedAt: new Date() }
-    );
+    await Buyer.findByIdAndUpdate(buyerId, {
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    });
 
     res.noContent();
   }
 
   //update Buyer password
-  async formBuyerUpdatePassword(req: AuthenticatedRequest, res: Response) {
-      const buyerId = req.loggedInAccount.id;
+  async formBuyerUpdatePassword(req: Request, res: Response) {
+    const buyerId = req.loggedInAccount._id;
     const { oldPassword, newPassword } = req.body;
 
     const { error } = validators.changePasswordValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
 
     const buyer = await Buyer.findById(buyerId);
-    if (!buyer) throw new ResourceNotFound("Buyer not found", "RESOURCE_NOT_FOUND");
+    if (!buyer)
+      throw new ResourceNotFound("Buyer not found", "RESOURCE_NOT_FOUND");
 
     if (buyer.authType.password === undefined) {
-        throw new Forbidden("Cannot change password for non-form accounts.", "INSUFFICIENT_PERMISSIONS");
+      throw new Forbidden(
+        "Cannot change password for non-form accounts.",
+        "INSUFFICIENT_PERMISSIONS"
+      );
     }
 
     const isMatch = await bcrypt.compare(oldPassword, buyer.authType.password);
-    if (!isMatch) throw new BadRequest("Incorrect old password", "INVALID_REQUEST_PARAMETERS");
+    if (!isMatch)
+      throw new BadRequest(
+        "Incorrect old password",
+        "INVALID_REQUEST_PARAMETERS"
+      );
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await Buyer.findByIdAndUpdate(
-      buyerId,
-      { password: hash, updatedAt: new Date() }
-    );
+    await Buyer.findByIdAndUpdate(buyerId, {
+      password: hash,
+      updatedAt: new Date(),
+    });
 
     return res.ok({
       message: "Password successfully changed",
@@ -141,11 +158,16 @@ class BuyerController {
   }
 
   //update Buyer dp
-  async updateBuyerDp(req: AuthenticatedRequest, res: Response) {
-    const buyerId = req.loggedInAccount.id;
-    const profilePicture = req.files.profilePicture[0];
+  // todo: add files type to express body
+  async updateBuyerDp(req: Request, res: Response) {
+    const buyerId = req.loggedInAccount._id;
+    const profilePicture = req.file;
+
     if (!req.files || !profilePicture) {
-      throw new BadRequest("No profile picture provided.", "MISSING_REQUIRED_FIELD");
+      throw new BadRequest(
+        "No profile picture provided.",
+        "MISSING_REQUIRED_FIELD"
+      );
     }
 
     const profilePictureExtension = path.extname(profilePicture.originalname);
@@ -165,7 +187,10 @@ class BuyerController {
     ).select(buyerFields.join(" "));
 
     if (!buyer) {
-      throw new ResourceNotFound(`Buyer ${buyerId} not found.`, "RESOURCE_NOT_FOUND");
+      throw new ResourceNotFound(
+        `Buyer ${buyerId} not found.`,
+        "RESOURCE_NOT_FOUND"
+      );
     }
 
     res.ok({

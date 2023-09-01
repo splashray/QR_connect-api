@@ -1,13 +1,6 @@
 import { z } from "zod";
 import { validateRequestBody } from "../../../utils/zodHelpers";
 
-interface CreateBuyerPayload {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-}
-
 // eslint-disable-next-line
 export const createBuyerValidator = (payload: any) => {
   const schema = z.object({
@@ -33,15 +26,9 @@ export const createBuyerValidator = (payload: any) => {
 
   return validateRequestBody(schema, payload);
 };
-interface CreateBusinessPayload {
-  firstName: string;
-  lastName: string;
-  email: string;
-  businessName: string;
-  industry: string;
-  password: string;
-}
-export const createBusinessValidator = (payload: CreateBusinessPayload) => {
+
+// eslint-disable-next-line
+export const createBusinessValidator = (payload: any) => {
   const schema = z.object({
     firstName: z.string({
       required_error: "First name is required.",
@@ -71,12 +58,9 @@ export const createBusinessValidator = (payload: CreateBusinessPayload) => {
 
   return validateRequestBody(schema, payload);
 };
-interface LoginPayload {
-  email: string;
-  password: string;
-}
 
-export const loginValidator = (payload: LoginPayload) => {
+// eslint-disable-next-line
+export const loginValidator = (payload: any) => {
   const schema = z.object({
     email: z
       .string({
@@ -95,13 +79,8 @@ export const loginValidator = (payload: LoginPayload) => {
   return validateRequestBody(schema, payload);
 };
 
-interface CreateAdminPayload {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export const createAdminValidator = (payload: CreateAdminPayload) => {
+// eslint-disable-next-line
+export const createAdminValidator = (payload: any) => {
   const schema = z.object({
     username: z.string({
       required_error: "username is required.",
@@ -123,12 +102,8 @@ export const createAdminValidator = (payload: CreateAdminPayload) => {
   return validateRequestBody(schema, payload);
 };
 
-interface AdminPayload {
-  email: string;
-  password: string;
-}
-
-export const adminValidator = (payload: AdminPayload) => {
+// eslint-disable-next-line
+export const adminValidator = (payload: any) => {
   const schema = z.object({
     email: z
       .string({
