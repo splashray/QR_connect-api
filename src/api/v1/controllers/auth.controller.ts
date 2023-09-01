@@ -38,7 +38,7 @@ class AuthController {
     const { error, data } = validators.createBusinessValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
 
-    let { firstName, lastName, email, businessName, password, industry } = data;
+    const { firstName, lastName, email, businessName, password, industry } = data;
     console.log(data);
 
     const emailExists = await Business.findOne({ email });
@@ -166,11 +166,9 @@ class AuthController {
 
   //buyer auth
   async buyerFormRegister(req: Request, res: Response) {
-    const { firstName, lastName, email, password } = req.body;
-
-    const { error } = validators.createBuyerValidator(req.body);
-
+    const { error, data } = validators.createBuyerValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    const { firstName, lastName, email, password } = data;
 
     const emailExists = await Buyer.findOne({ email });
     if (emailExists) {
@@ -210,10 +208,9 @@ class AuthController {
   }
 
   async buyerFormLogin(req: Request, res: Response) {
-    let { email, password } = req.body;
-    email = email.toLowerCase(); // Convert email to lowercase
-    const { error } = validators.loginValidator(req.body);
+    const { error, data } = validators.loginValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    const { email, password } = data;
 
     // Check if a buyer with the provided email exists
     const buyer = await Buyer.findOne({ email });
@@ -270,10 +267,9 @@ class AuthController {
 
   // admin auth
   async adminRegister(req: Request, res: Response) {
-    const { username, email, password } = req.body;
-
-    const { error } = validators.createAdminValidator(req.body);
+    const { error, data } = validators.createAdminValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    const { username, email, password } = data;
 
     const emailExists = await Admin.findOne({ email });
     if (emailExists) {
@@ -310,10 +306,9 @@ class AuthController {
   }
 
   async adminLogin(req: Request, res: Response) {
-    let { email, password } = req.body;
-    email = email.toLowerCase(); // Convert email to lowercase
-    const { error } = validators.adminValidator(req.body);
+    const { error, data } = validators.adminValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    const { email, password } = data;
 
     // Check if a admin with the provided email exists
     const admin = await Admin.findOne({ email });
@@ -359,10 +354,9 @@ class AuthController {
 
   // General Reset Password
   async sendTokenToForgetPassword(req: Request, res: Response) {
-    let { email, accountType } = req.body;
-    email = email.toLowerCase(); // convert to lowercase
-    const { error } = validators.resetTokenValidator(req.body);
+    const { error, data } = validators.resetTokenValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    let { email, accountType } = data;
 
     if (accountType === "Buyer") {
       const buyer = await Buyer.findOne({ email });

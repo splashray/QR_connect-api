@@ -19,7 +19,7 @@ export const createBuyerValidator = (payload: CreateBuyerPayload) => {
     email: z.string({
       required_error: "Email is required.",
       invalid_type_error: "Please provide a valid email.",
-    }),
+    }).email("Please provide a valid email address").toLowerCase(),
     password: z.string({
       required_error: "Password is required.",
     }).min(8, "Password must be minimum of 8 characters."),
@@ -46,7 +46,7 @@ export const createBusinessValidator = (payload: CreateBusinessPayload) => {
     email: z.string({
       required_error: "Email is required.",
       invalid_type_error: "Please provide a valid email.",
-    }).toLowerCase(),
+    }).email("Please provide a valid email address").toLowerCase(),
     businessName: z.string({
       required_error: "Business name is required.",
     }),
@@ -70,7 +70,7 @@ export const loginValidator = (payload: LoginPayload) => {
     email: z.string({
       required_error: "Email is required.",
       invalid_type_error: "Please provide a valid email.",
-    }).toLowerCase(),
+    }).email("Please provide a valid email address").toLowerCase(),
     password: z.string({
       required_error: "Password is required.",
     }).min(8, "Password must be minimum of 8 characters."),
@@ -90,12 +90,10 @@ export const createAdminValidator = (payload: CreateAdminPayload) => {
     username: z.string({
       required_error: "username is required.",
     }),
-    email: z
-      .string({
-        required_error: "email is required.",
-        invalid_type_error: "Please provide a valid email",
-      })
-      .email("Please provide a valid email address"),
+    email: z.string({
+      required_error: "email is required.",
+      invalid_type_error: "Please provide a valid email",
+    }).email("Please provide a valid email address").toLowerCase(),
     password: z
       .string({
         required_error: "email is required",
@@ -116,7 +114,7 @@ export const adminValidator = (payload: AdminPayload) => {
     email: z.string({
       required_error: "Email is required.",
       invalid_type_error: "Please provide a valid email.",
-    }),
+    }).email("Please provide a valid email address").toLowerCase(),
     password: z.string({
       required_error: "Password is required.",
     }).min(8, "Password must be minimum of 8 characters."),
@@ -153,7 +151,7 @@ export const resetTokenValidator = (payload: ResetTokenPayload) => {
     email: z.string({
       required_error: "Email is required.",
       invalid_type_error: "Please provide a valid email.",
-    }),
+    }).email("Please provide a valid email address").toLowerCase(),
     accountType: z.enum(["Buyer", "Business"], {
       required_error: "Account Type is required.",
     }),
