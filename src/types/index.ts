@@ -12,6 +12,7 @@ type UserType = "Buyer" | "Business";
 type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
 interface Buyer {
+  _id: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -36,6 +37,7 @@ interface Buyer {
 }
 
 interface Business {
+  _id: string;
   qrcode: string;
   email: string;
   firstName: string;
@@ -63,6 +65,7 @@ interface Business {
 }
 
 interface Admin {
+  _id: string;
   username: string;
   email: string;
   password: string;
@@ -82,23 +85,16 @@ declare global {
       error(
         statusCode: number,
         message: string,
-        errorCode: HttpErrorCode,
+        errorCode: HttpErrorCode
       ): Response;
     }
     export interface Request {
       user?: { id: number; email: string };
+      loggedInAccount: Business | Buyer | Admin;
     }
   }
 
   namespace NodeJS {
     interface ProcessEnv extends z.infer<typeof envSchema> {}
   }
-
-   namespace Express {   
-    interface Request {
-      loggedInAccount: Business | Buyer | Admin;
-    }
-  }
-  
-  
 }

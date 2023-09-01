@@ -8,7 +8,8 @@ interface CreateBuyerPayload {
   password: string;
 }
 
-export const createBuyerValidator = (payload: CreateBuyerPayload) => {
+// eslint-disable-next-line
+export const createBuyerValidator = (payload: any) => {
   const schema = z.object({
     firstName: z.string({
       required_error: "First name is required.",
@@ -16,13 +17,18 @@ export const createBuyerValidator = (payload: CreateBuyerPayload) => {
     lastName: z.string({
       required_error: "Last name is required.",
     }),
-    email: z.string({
-      required_error: "Email is required.",
-      invalid_type_error: "Please provide a valid email.",
-    }).email("Please provide a valid email address").toLowerCase(),
-    password: z.string({
-      required_error: "Password is required.",
-    }).min(8, "Password must be minimum of 8 characters."),
+    email: z
+      .string({
+        required_error: "Email is required.",
+        invalid_type_error: "Please provide a valid email.",
+      })
+      .email("Please provide a valid email address")
+      .toLowerCase(),
+    password: z
+      .string({
+        required_error: "Password is required.",
+      })
+      .min(8, "Password must be minimum of 8 characters."),
   });
 
   return validateRequestBody(schema, payload);
@@ -43,19 +49,24 @@ export const createBusinessValidator = (payload: CreateBusinessPayload) => {
     lastName: z.string({
       required_error: "Last name is required.",
     }),
-    email: z.string({
-      required_error: "Email is required.",
-      invalid_type_error: "Please provide a valid email.",
-    }).email("Please provide a valid email address").toLowerCase(),
+    email: z
+      .string({
+        required_error: "Email is required.",
+        invalid_type_error: "Please provide a valid email.",
+      })
+      .email("Please provide a valid email address")
+      .toLowerCase(),
     businessName: z.string({
       required_error: "Business name is required.",
     }),
     industry: z.string({
       required_error: "Industry is required.",
     }),
-    password: z.string({
-      required_error: "Password is required.",
-    }).min(8, "Password must be minimum of 8 characters."),
+    password: z
+      .string({
+        required_error: "Password is required.",
+      })
+      .min(8, "Password must be minimum of 8 characters."),
   });
 
   return validateRequestBody(schema, payload);
@@ -67,13 +78,18 @@ interface LoginPayload {
 
 export const loginValidator = (payload: LoginPayload) => {
   const schema = z.object({
-    email: z.string({
-      required_error: "Email is required.",
-      invalid_type_error: "Please provide a valid email.",
-    }).email("Please provide a valid email address").toLowerCase(),
-    password: z.string({
-      required_error: "Password is required.",
-    }).min(8, "Password must be minimum of 8 characters."),
+    email: z
+      .string({
+        required_error: "Email is required.",
+        invalid_type_error: "Please provide a valid email.",
+      })
+      .email("Please provide a valid email address")
+      .toLowerCase(),
+    password: z
+      .string({
+        required_error: "Password is required.",
+      })
+      .min(8, "Password must be minimum of 8 characters."),
   });
 
   return validateRequestBody(schema, payload);
@@ -90,10 +106,13 @@ export const createAdminValidator = (payload: CreateAdminPayload) => {
     username: z.string({
       required_error: "username is required.",
     }),
-    email: z.string({
-      required_error: "email is required.",
-      invalid_type_error: "Please provide a valid email",
-    }).email("Please provide a valid email address").toLowerCase(),
+    email: z
+      .string({
+        required_error: "email is required.",
+        invalid_type_error: "Please provide a valid email",
+      })
+      .email("Please provide a valid email address")
+      .toLowerCase(),
     password: z
       .string({
         required_error: "email is required",
@@ -111,13 +130,18 @@ interface AdminPayload {
 
 export const adminValidator = (payload: AdminPayload) => {
   const schema = z.object({
-    email: z.string({
-      required_error: "Email is required.",
-      invalid_type_error: "Please provide a valid email.",
-    }).email("Please provide a valid email address").toLowerCase(),
-    password: z.string({
-      required_error: "Password is required.",
-    }).min(8, "Password must be minimum of 8 characters."),
+    email: z
+      .string({
+        required_error: "Email is required.",
+        invalid_type_error: "Please provide a valid email.",
+      })
+      .email("Please provide a valid email address")
+      .toLowerCase(),
+    password: z
+      .string({
+        required_error: "Password is required.",
+      })
+      .min(8, "Password must be minimum of 8 characters."),
   });
 
   return validateRequestBody(schema, payload);
@@ -148,10 +172,13 @@ interface ResetTokenPayload {
 
 export const resetTokenValidator = (payload: ResetTokenPayload) => {
   const schema = z.object({
-    email: z.string({
-      required_error: "Email is required.",
-      invalid_type_error: "Please provide a valid email.",
-    }).email("Please provide a valid email address").toLowerCase(),
+    email: z
+      .string({
+        required_error: "Email is required.",
+        invalid_type_error: "Please provide a valid email.",
+      })
+      .email("Please provide a valid email address")
+      .toLowerCase(),
     accountType: z.enum(["Buyer", "Business"], {
       required_error: "Account Type is required.",
     }),

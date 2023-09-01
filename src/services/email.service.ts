@@ -57,7 +57,6 @@ class EmailService {
     };
     await emailQueue.add("new-subscription", jobData);
   }
-
 }
 
 export default new EmailService();

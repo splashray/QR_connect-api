@@ -26,7 +26,6 @@ interface IProduct extends Document {
 // Define the product schema
 const ProductSchema = new mongoose.Schema<IProduct>(
   {
-    
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
@@ -44,7 +43,7 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       type: String,
       required: true,
     },
-      
+
     productDescription: {
       type: String,
       required: true,
@@ -66,11 +65,11 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       required: true,
     },
     productColors: {
-      type: [String], 
+      type: [String],
       required: true,
     },
     productKeySpecifications: {
-      type: [String], 
+      type: [String],
       required: true,
     },
     productImages: {
@@ -87,7 +86,7 @@ const ProductSchema = new mongoose.Schema<IProduct>(
     productDiscountPercentage: {
       type: Number,
     },
-    
+
     isAvailable: {
       type: Boolean,
       default: true,
@@ -97,7 +96,7 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       default: null,
     },
   },
-  { timestamps: true } 
+  { timestamps: true }
 );
 
 // Define the product model

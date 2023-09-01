@@ -100,8 +100,8 @@ class BuyerController {
   }
 
   // Delete a Buyer by ID
-  async deleteBuyer(req: AuthenticatedRequest, res: Response) {
-    const buyerId = req.loggedInAccount.id;
+  async deleteBuyer(req:Request, res: Response) {
+    const buyerId = req.loggedInAccount._id;
 
     await Buyer.findByIdAndUpdate(
       buyerId,
