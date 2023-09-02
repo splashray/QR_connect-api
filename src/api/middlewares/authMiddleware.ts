@@ -2,9 +2,9 @@
 import { Request, Response, NextFunction } from "express";
 import { Unauthorized, Forbidden } from "../../errors/httpErrors";
 import jwt from "jsonwebtoken";
-import {Admin, IAdmin} from "../../db/models/admin.model";
-import {Buyer, IBuyer} from "../../db/models/buyer.model";
-import { Business, IBusiness } from "../../db/models/business.model";
+import Admin, { IAdmin } from "../../db/models/admin.model";
+import Buyer, { IBuyer } from "../../db/models/buyer.model";
+import Business, { IBusiness } from "../../db/models/business.model";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -20,14 +20,15 @@ interface AuthOptions {
 
 // type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
-
-type LoggedInAccount = IBusiness | IBuyer| IAdmin;
+type LoggedInAccount = IBusiness | IBuyer | IAdmin;
 
 const auth = (options: AuthOptions = {}) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers["authorization"];
     if (!authHeader) {
-      return next(new Unauthorized("Missing Auth header", "MISSING_AUTH_HEADER"));
+      return next(
+        new Unauthorized("Missing Auth header", "MISSING_AUTH_HEADER")
+      );
     }
 
     const token = authHeader.split(" ")[1];
@@ -38,9 +39,9 @@ const auth = (options: AuthOptions = {}) => {
     let payload;
     try {
       payload = jwt.verify(token, process.env.JWT_SEC) as {
-          buyerId?: string;
-          businessId?: string;
-          adminId?: string;
+        buyerId?: string;
+        businessId?: string;
+        adminId?: string;
       };
     } catch (error) {
       throw new Unauthorized("Invalid or Expired Token", "INVALID_TOKEN");
@@ -54,9 +55,12 @@ const auth = (options: AuthOptions = {}) => {
     } else if (payload.adminId) {
       loggedInAccount = await Admin.findById(payload.adminId);
     } else {
-      throw new Unauthorized("User with this token no longer exists", "INVALID_TOKEN");
+      throw new Unauthorized(
+        "User with this token no longer exists",
+        "INVALID_TOKEN"
+      );
     }
-  
+
     req.loggedInAccount = loggedInAccount!;
 
     handleAuthOptions(options, loggedInAccount!);
@@ -69,7 +73,10 @@ const auth = (options: AuthOptions = {}) => {
   };
 };
 
-function handleAuthOptions(options: AuthOptions, loggedInAccount:LoggedInAccount) {
+function handleAuthOptions(
+  options: AuthOptions,
+  loggedInAccount: LoggedInAccount
+) {
   if (options.accountType) {
     if (!Array.isArray(options.accountType)) return;
 
@@ -86,7 +93,9 @@ function handleAuthOptions(options: AuthOptions, loggedInAccount:LoggedInAccount
   if (options.userType) {
     if (!Array.isArray(options.userType)) return;
 
-    const userTypes = options.userType.map((userType) => userType.toLowerCase());
+    const userTypes = options.userType.map((userType) =>
+      userType.toLowerCase()
+    );
 
     if (!userTypes.includes(loggedInAccount.userType.toLowerCase())) {
       const message = `${loggedInAccount.userType} ${loggedInAccount._id} does not have permission to this resource`;
@@ -119,7 +128,7 @@ function substituteUserFlag(req: Request, loggedInAccount: LoggedInAccount) {
   req.params[paramName] = loggedInAccount._id.toString();
 }
 
-function protectUserResources(req: Request, loggedInAccount:LoggedInAccount) {
+function protectUserResources(req: Request, loggedInAccount: LoggedInAccount) {
   const results = req.path.match(/\/auth\/(\w+)/);
   if (!results) return;
 
