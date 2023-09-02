@@ -2,7 +2,7 @@ import mongoose, { Document, Model } from "mongoose";
 
 type AccountType = "Admin" | "Buyer" | "Business";
 
-interface IAdmin extends Document {
+export interface IAdmin extends Document {
   username: string;
   email: string;
   password: string;

@@ -4,77 +4,9 @@ import { z } from "zod";
 
 import { HttpErrorCode } from "../errors/httpErrors";
 import { envSchema } from "../env";
-
-type AccountType = "Admin" | "Buyer" | "Business";
-
-type UserType = "Buyer" | "Business";
-
-type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
-
-interface Buyer {
-  _id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  addressBook: string;
-  phoneNumber: string;
-
-  authType: {
-    password?: string;
-    googleUuid?: string;
-  };
-  accountType: AccountType;
-  userType: UserType;
-  profilePicture?: string;
-  isAdmin: boolean;
-  finishTourGuide: boolean;
-  passwordRecovery?: {
-    passwordRecoveryOtp?: string;
-    passwordRecoveryOtpExpiresAt?: Date;
-  };
-  refreshToken?: string;
-  deletedAt?: Date | null;
-}
-
-interface Business {
-  _id: string;
-  qrcode: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  businessName: string;
-  businessSlug: string;
-  industry: string;
-
-  authType: {
-    password?: string;
-    googleUuid?: string;
-  };
-  accountType: AccountType;
-  userType: UserType;
-  profilePicture?: string;
-  isAdmin: boolean;
-  finishTourGuide: boolean;
-  subscriptionStatus: SubscriptionStatus;
-  passwordRecovery?: {
-    passwordRecoveryOtp?: string;
-    passwordRecoveryOtpExpiresAt?: Date;
-  };
-  refreshToken?: string;
-  deletedAt?: Date | null;
-}
-
-interface Admin {
-  _id: string;
-  username: string;
-  email: string;
-  password: string;
-  accountType: AccountType;
-  profilePicture?: string;
-  isAdmin: boolean;
-  refreshToken?: string;
-  deletedAt?: Date | null;
-}
+import { IBusiness } from "../db/models/business.model";
+import { IBuyer} from "../db/models/buyer.model";
+import { IAdmin } from "../db/models/admin.model";
 
 declare global {
   namespace Express {
@@ -90,7 +22,7 @@ declare global {
     }
     export interface Request {
       user?: { id: number; email: string };
-      loggedInAccount: Business | Buyer | Admin;
+      loggedInAccount: IBusiness | IBuyer | IAdmin;
     }
   }
 

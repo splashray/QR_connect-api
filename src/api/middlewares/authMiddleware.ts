@@ -2,10 +2,9 @@
 import { Request, Response, NextFunction } from "express";
 import { Unauthorized, Forbidden } from "../../errors/httpErrors";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
-import Admin from "../../db/models/admin.model";
-import Buyer from "../../db/models/buyer.model";
-import Business from "../../db/models/business.model";
+import {Admin, IAdmin} from "../../db/models/admin.model";
+import {Buyer, IBuyer} from "../../db/models/buyer.model";
+import { Business, IBusiness } from "../../db/models/business.model";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -15,79 +14,14 @@ interface AuthOptions {
   isAdmin?: boolean;
 }
 
-type AccountType = "Admin" | "Buyer" | "Business";
+// type AccountType = "Admin" | "Buyer" | "Business";
 
-type UserType = "Buyer" | "Business";
+// type UserType = "Buyer" | "Business";
 
-type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
+// type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
-interface Buyer {
-  _id:mongoose.Types.ObjectId;
-  email: string;
-  firstName: string;
-  lastName: string;
-  addressBook: string;
-  phoneNumber: string;
 
-  authType: {
-    password?: string;
-    googleUuid?: string;
-  };
-  accountType: AccountType;
-  userType: UserType;
-  profilePicture?: string;
-  isAdmin: boolean;
-  finishTourGuide: boolean;
-  passwordRecovery?: {
-    passwordRecoveryOtp?: string;
-    passwordRecoveryOtpExpiresAt?: Date;
-  };
-  refreshToken?: string;
-  deletedAt?: Date | null;
-}
-
-interface Business {
-    _id:mongoose.Types.ObjectId;
-  qrcode: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  businessName: string;
-  businessSlug: string;
-  industry: string;
-
-  authType: {
-    password?: string;
-    googleUuid?: string;
-  };
-  accountType: AccountType;
-  userType: UserType;
-  profilePicture?: string;
-  isAdmin: boolean;
-  finishTourGuide: boolean;
-  subscriptionStatus: SubscriptionStatus;
-  passwordRecovery?: {
-    passwordRecoveryOtp?: string;
-    passwordRecoveryOtpExpiresAt?: Date;
-  };
-  refreshToken?: string;
-  deletedAt?: Date | null;
-}
-
-interface Admin {
- _id:mongoose.Types.ObjectId;
-  username: string;
-  email: string;
-  password: string;
-  accountType: AccountType;
-  userType: UserType;
-  profilePicture?: string;
-  isAdmin: boolean;
-  refreshToken?: string;
-  deletedAt?: Date | null;
-}
-
-type LoggedInAccount = Buyer | Business | Admin;
+type LoggedInAccount = IBusiness | IBuyer| IAdmin;
 
 const auth = (options: AuthOptions = {}) => {
   return async (req: Request, res: Response, next: NextFunction) => {

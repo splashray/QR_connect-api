@@ -3,7 +3,7 @@ import mongoose, { Document, Model } from "mongoose";
 type AccountType = "Admin" | "Buyer" | "Business";
 
 type UserType = "Buyer" | "Business";
-interface IBuyer extends Document {
+export interface IBuyer extends Document {
   email: string;
   firstName: string;
   lastName: string;

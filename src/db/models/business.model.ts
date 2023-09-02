@@ -8,7 +8,7 @@ type UserType = "Buyer" | "Business";
 
 type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
-interface IBusiness extends Document {
+export interface IBusiness extends Document {
   qrcode: string;
   email: string;
   firstName: string;
