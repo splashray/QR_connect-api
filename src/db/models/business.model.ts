@@ -16,6 +16,7 @@ export interface IBusiness extends Document {
   businessName: string;
   businessSlug: string;
   industry: string;
+  phoneNumber: string;
 
   authType: {
     password?: string;
@@ -58,15 +59,12 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
 
     businessName: {
       type: String,
-      required: true,
     },
     businessSlug: {
       type: String,
-      required: true,
     },
     industry: {
       type: String,
-      required: true,
     },
 
     authType: {
@@ -96,6 +94,9 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
       type: String,
       default:
         "https://res.cloudinary.com/dsffatdpd/image/upload/v1685691602/baca/logo_aqssg3.jpg",
+    },
+    phoneNumber: {
+      type: String,
     },
     isAdmin: {
       type: Boolean,

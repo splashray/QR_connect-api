@@ -2,6 +2,8 @@ import mongoose, { Document, Model } from "mongoose";
 
 type AccountType = "Admin" | "Buyer" | "Business";
 
+type authMethod = "Form" | "Google";
+
 type UserType = "Buyer" | "Business";
 export interface IBuyer extends Document {
   email: string;
@@ -14,6 +16,7 @@ export interface IBuyer extends Document {
     password?: string;
     googleUuid?: string;
   };
+  authMethod: authMethod;
   accountType: AccountType;
   userType: UserType;
   profilePicture?: string;
@@ -56,6 +59,11 @@ const BuyerSchema = new mongoose.Schema<IBuyer>(
       googleUuid: {
         type: String,
       },
+    },
+    authMethod: {
+      type: String,
+      required: true,
+      enum: ["Form", "Google"],
     },
     accountType: {
       type: String,

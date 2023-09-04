@@ -14,11 +14,15 @@ interface AuthOptions {
   isAdmin?: boolean;
 }
 
-// type AccountType = "Admin" | "Buyer" | "Business";
+function isBuyerOrBusiness(
+  loggedInAccount: LoggedInAccount
+): loggedInAccount is IBuyer | IBusiness {
+  return (
+    loggedInAccount.accountType.toLowerCase() === "buyer" ||
+    loggedInAccount.accountType.toLowerCase() === "business"
+  );
+}
 
-// type UserType = "Buyer" | "Business";
-
-// type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
 
 type LoggedInAccount = IBusiness | IBuyer | IAdmin;
 
@@ -90,19 +94,6 @@ function handleAuthOptions(
     }
   }
 
-  if (options.userType) {
-    if (!Array.isArray(options.userType)) return;
-
-    const userTypes = options.userType.map((userType) =>
-      userType.toLowerCase()
-    );
-
-    if (!userTypes.includes(loggedInAccount.userType.toLowerCase())) {
-      const message = `${loggedInAccount.userType} ${loggedInAccount._id} does not have permission to this resource`;
-      throw new Forbidden(message, "INSUFFICIENT_PERMISSIONS");
-    }
-  }
-
   if (options.isAdmin) {
     const hasAccess =
       loggedInAccount.isAdmin === true &&
@@ -110,6 +101,20 @@ function handleAuthOptions(
 
     if (!hasAccess) {
       const message = `${loggedInAccount.accountType} ${loggedInAccount._id} does not have permission to this resource`;
+      throw new Forbidden(message, "INSUFFICIENT_PERMISSIONS");
+    }
+  }
+
+  // Check for 'userType' only if it exists on 'loggedInAccount'
+  if (options.userType && isBuyerOrBusiness(loggedInAccount)) {
+    if (!Array.isArray(options.userType)) return;
+
+    const userTypes = options.userType.map((userType) =>
+      userType.toLowerCase()
+    );
+
+    if (!userTypes.includes(loggedInAccount.userType?.toLowerCase())) {
+      const message = `${loggedInAccount.userType} ${loggedInAccount._id} does not have permission to this resource`;
       throw new Forbidden(message, "INSUFFICIENT_PERMISSIONS");
     }
   }

@@ -6,12 +6,12 @@ import { auth } from "../../middlewares/authMiddleware";
 const authRouter = express.Router();
 
 // form Auth buyer
-authRouter.post("/buyer/form-register", controller.businessFormRegister);
-authRouter.post("/buyer/form-login", controller.businessFormLogin);
+authRouter.post("/buyer/form-register", controller.buyerFormRegister);
+authRouter.post("/buyer/form-login", controller.buyerFormLogin);
 
 // form Auth business
-authRouter.post("/business/form-register", controller.buyerFormRegister);
-authRouter.post("/business/form-login", controller.buyerFormLogin);
+authRouter.post("/business/form-register", controller. businessFormRegister);
+authRouter.post("/business/form-login", controller. businessFormLogin);
 
 // Google Auth buyer/business
 // authRouter.get("/google/getauthurl", controller.getGoogleConsentUrl);

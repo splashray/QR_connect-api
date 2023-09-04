@@ -14,11 +14,13 @@ import {
   Conflict,
   Unauthorized,
   Forbidden,
+  ServerError
 } from "../../../errors/httpErrors";
 import Admin from "../../../db/models/admin.model";
-import Business from "../../../db/models/business.model";
-import Buyer from "../../../db/models/buyer.model";
+import Business, { IBusiness } from "../../../db/models/business.model";
+import Buyer, { IBuyer } from "../../../db/models/buyer.model";
 import * as validators from "../validators/auth.validator";
+import googleHelpers from "../../../utils/authGoogleHelpers";
 import {
   generateAuthToken,
   verifyRefreshToken,
@@ -29,18 +31,20 @@ import {
   adminFields,
 } from "../../../utils/fieldHelpers";
 import { generateQRCode } from "../../../utils/qrCodeHelpers";
+import emailService from "../../../services/email.service"
 
 const PASSWORD_TOKEN_EXPIRY = 10; // 10 minutes
 
 class AuthController {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private clientPromise: Promise<any> | null = null;
+
   //business auth
   async businessFormRegister(req: Request, res: Response) {
     const { error, data } = validators.createBusinessValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
 
     const { firstName, lastName, email, businessName, password, industry } = data;
-    console.log(data);
-
     const emailExists = await Business.findOne({ email });
     if (emailExists) {
       console.log(`${email} already exist, change the email.`);
@@ -187,6 +191,7 @@ class AuthController {
       email,
       accountType,
       userType: "Buyer",
+      authMethod: "Form",
       authType: {
         password: hash,
       },
@@ -216,7 +221,7 @@ class AuthController {
     const buyer = await Buyer.findOne({ email });
     if (!buyer) {
       throw new BadRequest(
-        "buyer account not found.",
+        "Invalid Buyer account credentials.",
         "INVALID_REQUEST_PARAMETERS"
       );
     }
@@ -235,21 +240,29 @@ class AuthController {
     }
 
     // Check if user has "value" on password as authType
-    if (buyer.authType.password !== null) {
+    if (buyer.authMethod !== "Form") {
       throw new Forbidden(
         "You have no password set; please sign in with a third-party provider, e.g. Google.",
         "ACCESS_DENIED"
       );
     }
 
-    // Verify the provided password against the hashed password
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      buyer.authType.password
-    );
-    if (!isPasswordValid) {
-      throw new Unauthorized("Invalid password.", "INVALID_PASSWORD");
+    // Retrieve the hashed password from the user's business account
+    const hashedPassword = buyer.authType?.password;
+
+    // Check if hashedPassword is not undefined before using bcrypt.compareSync
+    if (hashedPassword !== undefined) {
+      const isPasswordValid = bcrypt.compareSync(password, hashedPassword);
+      if (!isPasswordValid) {
+        throw new Unauthorized("Invalid password.", "INVALID_PASSWORD");
+      }
+    } else {
+      throw new Forbidden(
+        "You have no password set; please sign in with a third-party provider, e.g. Google.",
+        "ACCESS_DENIED"
+      );
     }
+
 
     const { accessToken, refreshToken } = await generateAuthToken(
       buyer,
@@ -264,6 +277,107 @@ class AuthController {
       message: "Logged in successfully",
     });
   }
+
+  // GOOGLE FOR BOTH BUYERS AND BUSINESS
+  //get google auth Url
+  async getGoogleConsentUrl(req: Request, res: Response) {
+    try {
+      if (!this.clientPromise) {
+        this.clientPromise = googleHelpers.generateClient();
+      }
+      const client = await this.clientPromise;
+      const authUrl = client.generateAuthUrl({
+        access_type: "offline",
+        scope: googleHelpers.SCOPES,
+      });
+      res.ok({
+        urlAuth: authUrl,
+      });
+    } catch (error) {
+      throw new ServerError(
+        "Could not connect to Google servers, please try again later",
+        "THIRD_PARTY_API_FAILURE"
+      );
+    }
+  }
+
+  async googleVerification(req: Request, res: Response) {
+    const { error, data } = validators.oauthValidator(req.body);
+    if (error) throw new BadRequest(error.message, error.code);
+  
+    const { code, accountType } = data;
+    // if (accountType !== "Buyer" || accountType !== "Business") {
+    //   throw new BadRequest("Invalid accountType. Supported values: Business, Buyer", "INVALID_REQUEST_PARAMETERS");
+    // }
+
+    if (!this.clientPromise) {
+      this.clientPromise = googleHelpers.generateClient();
+    }
+    const client = await this.clientPromise;
+  
+    let account: IBuyer | IBusiness | null = null;
+    let authProcessType: string | null = null;
+    const tokenId = await googleHelpers.getAccessToken(code, client);
+    const payload = await googleHelpers.verify(tokenId, client);
+    const email = payload["email"];
+
+    //check if account exist
+    if (accountType === "Business") {
+      account = await Business.findOne({ email: email });
+    }else{
+      account = await Buyer.findOne({ email: email });
+    }
+
+    //create new account if it doesn't exist but sign if it exist
+    if (!account) {
+      if (accountType === "Business") {
+        account = await googleHelpers.businessGoogleSignup(code, client, payload);
+      } else {
+        account = await googleHelpers.buyerGoogleSignup(code, client, payload);
+      }
+      authProcessType = "signup";
+    } else {
+      if (accountType === "Business" || accountType === "Buyer") {
+        authProcessType = "signin";
+      } else {
+        throw new BadRequest("Invalid accountType for an existing user", "INVALID_REQUEST_PARAMETERS");
+      }
+    }
+  
+    if (account?.deletedAt) {
+      throw new Forbidden(
+        "Your account is currently deleted. Contact support if this is by mistake.",
+        "ACCESS_DENIED"
+      );
+    }
+  
+    if (account?.authMethod !== "Google") {
+      throw new Forbidden(
+        "You have no password set; please sign in with a third-party provider, e.g., Google.",
+        "ACCESS_DENIED"
+      );
+    }
+  
+    const { accessToken, refreshToken } = await generateAuthToken(account, account.accountType);
+  
+    let formattedAccount: IBuyer | IBusiness | null = null;
+    if (accountType === "Buyer") {
+      formattedAccount = _.pick(account, buyerFields);
+    } else if (accountType === "Business") {
+      formattedAccount = _.pick(account, businessFields);
+    } else {
+      throw new BadRequest("Invalid accountType. Supported values: Business, Buyer", "INVALID_REQUEST_PARAMETERS");
+    }
+  
+    res.ok({
+      authProcessType,
+      account: formattedAccount,
+      token: accessToken,
+      refreshToken: refreshToken,
+      message: `${accountType} is logged in successfully`,
+    });
+  }
+
 
   // admin auth
   async adminRegister(req: Request, res: Response) {
@@ -385,8 +499,15 @@ class AuthController {
       };
       await buyer.save();
 
-      // const otp = buyer.passwordRecovery.passwordRecoveryOtp;
-      // await resetPasswordEmail(email, buyer.firstName, otp);
+      const otp = buyer.passwordRecovery.passwordRecoveryOtp;
+      
+      if (otp && buyer.firstName && email) {
+        await emailService.resetPasswordEmail({
+          email: email,
+          firstName: buyer.firstName,
+          otp: otp,
+        });
+      }
 
       res.ok({ message: `New reset password Otp sent to ${email}` });
     } else if (accountType === "Business") {
@@ -416,8 +537,14 @@ class AuthController {
 
       await business.save();
 
-      // const otp = business.passwordRecovery.passwordRecoveryOtp;
-      // await resetPasswordEmail(email, business.firstName, otp);
+      const otp = business.passwordRecovery.passwordRecoveryOtp;
+      if (otp && business.firstName && email) {
+        await emailService.resetPasswordEmail({
+          email: email,
+          firstName: business.firstName,
+          otp: otp,
+        });
+      }
 
       res.ok({ message: `New reset password Otp sent to ${email}` });
     } else {

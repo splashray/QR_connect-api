@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 import { validateRequestBody } from "../../../utils/zodHelpers";
 
@@ -122,12 +123,7 @@ export const adminValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
-interface TokenPayload {
-  refreshToken: string;
-  accountType: "Buyer" | "Business";
-}
-
-export const tokenValidator = (payload: TokenPayload) => {
+export const tokenValidator = (payload: any) => {
   const schema = z.object({
     refreshToken: z.string({
       required_error: "Refresh Token is required.",
@@ -140,12 +136,20 @@ export const tokenValidator = (payload: TokenPayload) => {
   return validateRequestBody(schema, payload);
 };
 
-interface ResetTokenPayload {
-  email: string;
-  accountType: "Buyer" | "Business";
-}
+export const oauthValidator = (payload: any) => {
+  const schema = z.object({
+    code: z.string({
+      required_error: "code is required.",
+    }),
+    accountType: z.enum(["Buyer", "Business"], {
+      required_error: "Account Type is required.",
+    }),
+  });
 
-export const resetTokenValidator = (payload: ResetTokenPayload) => {
+  return validateRequestBody(schema, payload);
+};
+
+export const resetTokenValidator = (payload: any) => {
   const schema = z.object({
     email: z
       .string({
@@ -161,12 +165,8 @@ export const resetTokenValidator = (payload: ResetTokenPayload) => {
 
   return validateRequestBody(schema, payload);
 };
-interface VerifyTokenPayload {
-  otp: string;
-  accountType: "Buyer" | "Business";
-}
 
-export const verifyTokenValidator = (payload: VerifyTokenPayload) => {
+export const verifyTokenValidator = (payload: any) => {
   const schema = z.object({
     otp: z.string({
       required_error: "Otp is required.",
@@ -179,14 +179,9 @@ export const verifyTokenValidator = (payload: VerifyTokenPayload) => {
   return validateRequestBody(schema, payload);
 };
 
-interface VerifyUserOtpAndChangePasswordPayload {
-  otp: string;
-  newPassword: string;
-  accountType: "Buyer" | "Business";
-}
 
 export const verifyUserOtpAndChangePasswordValidator = (
-  payload: VerifyUserOtpAndChangePasswordPayload
+  payload: any
 ) => {
   const schema = z.object({
     otp: z.string({
@@ -203,14 +198,8 @@ export const verifyUserOtpAndChangePasswordValidator = (
   return validateRequestBody(schema, payload);
 };
 
-interface UpdateBuyerValidatorPayload {
-  firstName: string;
-  lastName: string;
-  addressBook: string;
-  phoneNumber: string;
-}
 
-export const updateBuyerValidator = (payload: UpdateBuyerValidatorPayload) => {
+export const updateBuyerValidator = (payload: any) => {
   const schema = z.object({
     firstName: z.string().optional(),
     lastName: z.string().optional(),
@@ -221,13 +210,9 @@ export const updateBuyerValidator = (payload: UpdateBuyerValidatorPayload) => {
   return validateRequestBody(schema, payload);
 };
 
-interface ChangePasswordValidatorPayload {
-  oldPassword: string;
-  newPassword: string;
-}
 
 export const changePasswordValidator = (
-  payload: ChangePasswordValidatorPayload
+  payload: any
 ) => {
   const schema = z.object({
     oldPassword: z.string({
