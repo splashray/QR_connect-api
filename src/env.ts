@@ -14,6 +14,9 @@ export const envSchema = z.object({
   MAILGUN_DOMAIN: z.string(),
   MAILGUN_SENDER_EMAIL: z.string().email(),
 
+  GOOGLE_CLIENT_ID :z.string(),
+  GOOGLE_CLIENT_SECRET :z.string(),
+
   JWT_SEC: z.string(),
   REFRESH_TOKEN: z.string(),
 

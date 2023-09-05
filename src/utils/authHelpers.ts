@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import dotenv from "dotenv";
 dotenv.config();
-import Buyer from "../db/models/buyer.model";
-import Admin from "../db/models/admin.model";
-import Business from "../db/models/business.model";
+import Buyer, {IBuyer} from "../db/models/buyer.model";
+import Admin,  { IAdmin } from "../db/models/admin.model";
+import Business, {IBusiness} from "../db/models/business.model";
 
 import jwt from "jsonwebtoken";
 
 import { Unauthorized } from "../errors/httpErrors";
 
-interface AccountDetails {
-  _id: string;
-}
+// interface AccountDetails {
+//   _id: string;
+// }
+type AccountDetails = IBusiness | IBuyer | IAdmin;
 
 const generateAuthToken = async (
   accountDetails: AccountDetails,

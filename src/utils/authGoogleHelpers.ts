@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import dotenv from "dotenv";
 dotenv.config();
-import { google } from "googleapis";
+import {google, Auth } from "googleapis";
 import { BadRequest} from  "../errors/httpErrors";
 import Buyer, { IBuyer } from "../db/models/buyer.model";
 import Business, { IBusiness } from "../db/models/business.model";
@@ -10,7 +10,6 @@ import Business, { IBusiness } from "../db/models/business.model";
 const baseUrl = process.env.BASE_URL;
 const clientId = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
 
 class GoogleService {
   public SCOPES: string[] = [
@@ -21,17 +20,18 @@ class GoogleService {
     "openid",
   ];
   
-  async generateClient(): google.auth.OAuth2 {
+  async generateClient(): Promise<Auth.OAuth2Client> {
     const redirectUrl = `${baseUrl}/auth/callback/googleAuth`;
-    return new google.auth.OAuth2(clientId, clientSecret, redirectUrl);
+    const client = new google.auth.OAuth2(clientId, clientSecret, redirectUrl);
+    return client;  
   }
   
-  async getAccessToken(code: string, client: google.auth.OAuth2): Promise<string> {
+  async getAccessToken(code: string, client: Auth.OAuth2Client): Promise<string> {
     const { tokens } = await client.getToken(code);
     return tokens.id_token as string;
   }
   
-  async verify(token: string, client: google.auth.OAuth2): Promise<any> {
+  async verify(token: string, client: Auth.OAuth2Client): Promise<any> {
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: clientId,
@@ -50,7 +50,7 @@ class GoogleService {
     return business || null;
   }
   
-  async buyerGoogleSignup(code: string, client: google.auth.OAuth2, payload: any): Promise<IBuyer | null> {
+  async buyerGoogleSignup(code: string, client: Auth.OAuth2Client, payload?: any): Promise<IBuyer | null> {
     let tokenId: string;
     if (!payload) {
       tokenId = await this.getAccessToken(code, client);
@@ -81,7 +81,7 @@ class GoogleService {
     }
   }
   
-  async businessGoogleSignup(code: string, client: google.auth.OAuth2, payload: any): Promise<IBusiness | null> {
+  async businessGoogleSignup(code: string, client: Auth.OAuth2Client, payload: any): Promise<IBusiness | null> {
     let tokenId: string;
     if (!payload) {
       tokenId = await this.getAccessToken(code, client);

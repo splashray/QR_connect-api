@@ -68,7 +68,7 @@ class AuthController {
     }
     // Generate QR code for the businessSlug
     const yourBaseURL = process.env.BASE_URL!;
-    const qrCodeData = `${yourBaseURL}?store=${businessSlug}`;
+    const qrCodeData = `${yourBaseURL}/shop/${businessSlug}`;
     const qrCodeOptions: qrcode.QRCodeToDataURLOptions = {
       type: "image/png", // Set the type property to 'image/png'
     };
@@ -286,10 +286,13 @@ class AuthController {
         this.clientPromise = googleHelpers.generateClient();
       }
       const client = await this.clientPromise;
+      console.log("client",client)
       const authUrl = client.generateAuthUrl({
         access_type: "offline",
         scope: googleHelpers.SCOPES,
       });
+      console.log("authUrl",authUrl)
+
       res.ok({
         urlAuth: authUrl,
       });
@@ -323,9 +326,9 @@ class AuthController {
 
     //check if account exist
     if (accountType === "Business") {
-      account = await Business.findOne({ email: email });
+      account = await Business.findOne({ email: email }) || null;
     }else{
-      account = await Buyer.findOne({ email: email });
+      account = await Buyer.findOne({ email: email }) || null;
     }
 
     //create new account if it doesn't exist but sign if it exist
@@ -361,14 +364,14 @@ class AuthController {
     const { accessToken, refreshToken } = await generateAuthToken(account, account.accountType);
   
     let formattedAccount: IBuyer | IBusiness | null = null;
-    if (accountType === "Buyer") {
-      formattedAccount = _.pick(account, buyerFields);
-    } else if (accountType === "Business") {
-      formattedAccount = _.pick(account, businessFields);
+    if (account && accountType === "Buyer") {
+      IBuyer = _.pick(account as IBuyer, buyerFields);
+    } else if (account && accountType === "Business") {
+      formattedAccount = _.pick(account as IBusiness, businessFields);
     } else {
       throw new BadRequest("Invalid accountType. Supported values: Business, Buyer", "INVALID_REQUEST_PARAMETERS");
     }
-  
+
     res.ok({
       authProcessType,
       account: formattedAccount,
