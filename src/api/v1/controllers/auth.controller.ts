@@ -365,7 +365,7 @@ class AuthController {
   
     let formattedAccount: IBuyer | IBusiness | null = null;
     if (account && accountType === "Buyer") {
-      IBuyer = _.pick(account as IBuyer, buyerFields);
+      formattedAccount = _.pick(account as IBuyer, buyerFields);
     } else if (account && accountType === "Business") {
       formattedAccount = _.pick(account as IBusiness, businessFields);
     } else {
