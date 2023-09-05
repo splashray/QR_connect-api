@@ -1,16 +1,25 @@
 import express from "express";
 
-// import controller from "../controllers/admin.controller";
-// import { auth } from "../../middlewares/authMiddleware";
+import controller from "../controllers/admin.controller";
+import { auth } from "../../middlewares/authMiddleware";
+import upload from "../../middlewares/multerMiddleware";
 
-const router = express.Router();
+const adminRouter = express.Router();
 
-// router.get("/:id",  
-//   auth({ accountType: ["Admin"] }),
-//   controller.getAdminById);
+//admin route
+adminRouter.get("/",
+  auth({ accountType: ["admin"] }),
+  controller.getAdmins);
 
-// router.get("/all",  
-//   auth({ accountType: ["Admin"] }),
-//   controller.getAllAdmin);
+// admins and admin route
+adminRouter.get("/:adminId",
+  auth({ accountType: ["admin", "admin"] }),
+  controller.getAdminById);
 
-export default router;
+adminRouter.patch("/dp", auth({ accountType: ["admin"] }), upload.single("profilePicture"),  controller.updateAdminDp);
+
+adminRouter.patch("/password", auth({ accountType: ["admin"] }), controller.formAdminUpdatePassword);
+
+adminRouter.delete("/", auth({ accountType: ["admin"] }), controller.deleteAdmin);
+
+export default adminRouter;

@@ -41,7 +41,6 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
   {
     qrcode: {
       type: String,
-      required: true,
     },
     firstName: {
       type: String,

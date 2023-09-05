@@ -4,6 +4,7 @@ import {
   BadRequest,
   ResourceNotFound,
   Forbidden,
+  Unauthorized
 } from "../../../errors/httpErrors";
 
 import Buyer from "../../../db/models/buyer.model";
@@ -76,10 +77,10 @@ class BuyerController {
   // Update a Buyer by ID
   async updateBuyer(req: Request, res: Response) {
     const buyerId = req.loggedInAccount._id;
-    const { firstName, lastName, addressBook, phoneNumber } = req.body;
-
-    const { error } = validators.updateBuyerValidator(req.body);
+    
+    const { error, data } = validators.updateBuyerValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    const { firstName, lastName, addressBook, phoneNumber } = data;
 
     const buyer = await Buyer.findByIdAndUpdate(
       buyerId,
@@ -115,32 +116,41 @@ class BuyerController {
   //update Buyer password
   async formBuyerUpdatePassword(req: Request, res: Response) {
     const buyerId = req.loggedInAccount._id;
-    const { oldPassword, newPassword } = req.body;
-
-    const { error } = validators.changePasswordValidator(req.body);
+    
+    const { error, data } = validators.changePasswordValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
+    const { oldPassword, newPassword } = data;
 
     const buyer = await Buyer.findById(buyerId);
     if (!buyer)
       throw new ResourceNotFound("Buyer not found", "RESOURCE_NOT_FOUND");
 
-    if (buyer.authType.password === undefined) {
+    if (buyer.authMethod !== "Form") {
       throw new Forbidden(
-        "Cannot change password for non-form accounts.",
+        "Cannot change password for non-form authentication method.",
         "INSUFFICIENT_PERMISSIONS"
       );
     }
 
-    const isMatch = await bcrypt.compare(oldPassword, buyer.authType.password);
-    if (!isMatch)
-      throw new BadRequest(
-        "Incorrect old password",
-        "INVALID_REQUEST_PARAMETERS"
+    // Retrieve the hashed password from the user's business account
+    const hashedPassword = buyer.authType?.password;
+
+    // Check if hashedPassword is not undefined before using bcrypt.compareSync
+    if (hashedPassword !== undefined) {
+      const isPasswordValid = bcrypt.compareSync(oldPassword, hashedPassword);
+      if (!isPasswordValid) {
+        throw new Unauthorized("Invalid old password.", "INVALID_PASSWORD");
+      }
+    } else {
+      throw new Forbidden(
+        "You have no password set; please sign in with a third-party provider, e.g. Google.",
+        "ACCESS_DENIED"
       );
+    }
 
     const hash = await bcrypt.hash(newPassword, 10);
     await Buyer.findByIdAndUpdate(buyerId, {
-      password: hash,
+      "authType.password": hash,
       updatedAt: new Date(),
     });
 
@@ -171,8 +181,7 @@ class BuyerController {
     );
     await fsPromises.unlink(uploadedFile.path);
   
-    const key = `https://qrconnect.s3.amazonaws.com/${profilePictureKey}`;
-  
+    const key = `https://qrconnect-data.s3.amazonaws.com/${profilePictureKey}`;
     const buyer = await Buyer.findByIdAndUpdate(
       buyerId,
       { profilePicture: key, updatedAt: new Date() },

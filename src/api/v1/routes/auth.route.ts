@@ -16,6 +16,7 @@ authRouter.post("/business/form-login", controller. businessFormLogin);
 // Google Auth buyer/business
 authRouter.get("/google/getauthurl", controller.getGoogleConsentUrl);
 authRouter.post("/google/callback", controller.googleVerification);
+authRouter.put("/business/update",   auth({ accountType: ["business"] }), controller.businessAccountUpdate);
 
 //password reset and regenerate verify email token for users/owners
 authRouter.post("/resetpassword/send-token", controller.sendTokenToForgetPassword);

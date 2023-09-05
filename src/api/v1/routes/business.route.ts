@@ -1,16 +1,28 @@
 import express from "express";
 
-// import controller from "../controllers/business.controller";
-// import { auth } from "../../middlewares/authMiddleware";
+import controller from "../controllers/business.controller";
+import { auth } from "../../middlewares/authMiddleware";
+import upload from "../../middlewares/multerMiddleware";
 
-const router = express.Router();
+const businessRouter = express.Router();
 
-// router.get("/:id",  
-//   auth({ accountType: ["Admin"] }),
-//   controller.getBusinessById);
+//admin route
+businessRouter.get("/",
+  auth({ accountType: ["admin"] }),
+  controller.getBusinesss);
 
-// router.get("/all",  
-//   auth({ accountType: ["Admin"] }),
-//   controller.getAllBusiness);
+// businesss and admin route
+businessRouter.get("/:businessId",
+  auth({ accountType: ["business", "admin"] }),
+  controller.getBusinessById);
 
-export default router;
+// businesss route
+businessRouter.put("/", auth({ accountType: ["business"] }), controller.updateBusiness);
+
+businessRouter.patch("/dp", auth({ accountType: ["business"] }), upload.single("profilePicture"),  controller.updateBusinessDp);
+
+businessRouter.patch("/password", auth({ accountType: ["business"] }), controller.formBusinessUpdatePassword);
+
+businessRouter.delete("/", auth({ accountType: ["business"] }), controller.deleteBusiness);
+
+export default businessRouter;

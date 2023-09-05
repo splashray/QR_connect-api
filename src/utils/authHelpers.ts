@@ -75,95 +75,139 @@ const generateAuthToken = async (
 };
 
 // Use to verify the refresh token before refreshing the access token
-const verifyRefreshToken = (
+// const verifyRefreshToken = (
+//   refreshToken: string,
+//   accountType: "Buyer" | "Admin" | "Business",
+// ) => {
+//   const privateKey = process.env.REFRESH_TOKEN!;
+
+//   return new Promise((resolve, reject) => {
+//     if (accountType === "Buyer") {
+//       Buyer.findOne({ refreshToken })
+//         .then((doc: any) => {
+//           if (!doc) {
+//             throw new Error("Invalid refresh token");
+//           }
+
+//           jwt.verify(
+//             refreshToken,
+//             privateKey,
+//             (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+//               if (err) {
+//                 throw new Error("Invalid refresh token");
+//               }
+
+//               resolve({
+//                 tokenDetails,
+//                 error: false,
+//                 message: "Valid refresh token",
+//               });
+//             },
+//           );
+//         })
+//         .catch((error: any) => {
+//           throw new Error(error.message);
+//         });
+//     } else if (accountType === "Admin") {
+//       Admin.findOne({ refreshToken })
+//         .then((doc: any) => {
+//           if (!doc) {
+//             throw new Error("Invalid refresh token");
+//           }
+
+//           jwt.verify(
+//             refreshToken,
+//             privateKey,
+//             (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+//               if (err) {
+//                 throw new Error("Invalid refresh token");
+//               }
+
+//               resolve({
+//                 tokenDetails,
+//                 error: false,
+//                 message: "Valid refresh token",
+//               });
+//             },
+//           );
+//         })
+//         .catch((error: any) => {
+//           throw new Error(error.message);
+//         });
+//     } else if (accountType === "Business") {
+//       Business.findOne({ refreshToken })
+//         .then((doc: any) => {
+//           if (!doc) {
+//             throw new Error("Invalid refresh token");
+//           }
+
+//           jwt.verify(
+//             refreshToken,
+//             privateKey,
+//             (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+//               if (err) {
+//                 throw new Error("Invalid refresh token");
+//               }
+
+//               resolve({
+//                 tokenDetails,
+//                 error: false,
+//                 message: "Valid refresh token",
+//               });
+//             },
+//           );
+//         })
+//         .catch((error: any) => {
+//           throw new Error(error.message);
+//         });
+//     } else {
+//       return reject(new Error("Invalid account type provided"));
+//     }
+//   });
+// };
+
+const verifyRefreshToken = async (
   refreshToken: string,
   accountType: "Buyer" | "Admin" | "Business",
 ) => {
   const privateKey = process.env.REFRESH_TOKEN!;
 
-  return new Promise((resolve, reject) => {
+  try {
+    let doc;
+
     if (accountType === "Buyer") {
-      Buyer.findOne({ refreshToken })
-        .then((doc: any) => {
-          if (!doc) {
-            throw new Error("Invalid refresh token");
-          }
-
-          jwt.verify(
-            refreshToken,
-            privateKey,
-            (err: jwt.VerifyErrors | null, tokenDetails: any) => {
-              if (err) {
-                throw new Error("Invalid refresh token");
-              }
-
-              resolve({
-                tokenDetails,
-                error: false,
-                message: "Valid refresh token",
-              });
-            },
-          );
-        })
-        .catch((error: any) => {
-          throw new Error(error.message);
-        });
+      doc = await Buyer.findOne({ refreshToken });
     } else if (accountType === "Admin") {
-      Admin.findOne({ refreshToken })
-        .then((doc: any) => {
-          if (!doc) {
-            throw new Error("Invalid refresh token");
-          }
-
-          jwt.verify(
-            refreshToken,
-            privateKey,
-            (err: jwt.VerifyErrors | null, tokenDetails: any) => {
-              if (err) {
-                throw new Error("Invalid refresh token");
-              }
-
-              resolve({
-                tokenDetails,
-                error: false,
-                message: "Valid refresh token",
-              });
-            },
-          );
-        })
-        .catch((error: any) => {
-          throw new Error(error.message);
-        });
+      doc = await Admin.findOne({ refreshToken });
     } else if (accountType === "Business") {
-      Business.findOne({ refreshToken })
-        .then((doc: any) => {
-          if (!doc) {
-            throw new Error("Invalid refresh token");
-          }
-
-          jwt.verify(
-            refreshToken,
-            privateKey,
-            (err: jwt.VerifyErrors | null, tokenDetails: any) => {
-              if (err) {
-                throw new Error("Invalid refresh token");
-              }
-
-              resolve({
-                tokenDetails,
-                error: false,
-                message: "Valid refresh token",
-              });
-            },
-          );
-        })
-        .catch((error: any) => {
-          throw new Error(error.message);
-        });
+      doc = await Business.findOne({ refreshToken });
     } else {
-      return reject(new Error("Invalid account type provided"));
+      throw new Error("Invalid account type provided");
     }
-  });
+
+    if (!doc) {
+      throw new Error("Invalid refresh token");
+    }
+
+    const tokenDetails = await new Promise((resolve, reject) => {
+      jwt.verify(refreshToken, privateKey, (err: jwt.VerifyErrors | null, tokenDetails: any) => {
+        if (err) {
+          reject(new Error("Invalid refresh token"));
+        } else {
+          resolve(tokenDetails);
+        }
+      });
+    });
+
+    return {
+      tokenDetails,
+      error: false,
+      message: "Valid refresh token",
+    };
+  } catch (error: any) {
+    throw new Unauthorized(error.message, "INVALID_TOKEN");
+  }
 };
+
 
 export { generateAuthToken, verifyRefreshToken };

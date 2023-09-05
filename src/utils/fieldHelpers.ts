@@ -31,6 +31,8 @@ export const buyerFields = [
   "userType",
   "finishTourGuide",
   "isAdmin",
+  "addressBook",
+  "phoneNumber"
 ];
 
 // admin field

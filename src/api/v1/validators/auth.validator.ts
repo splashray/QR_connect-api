@@ -210,6 +210,31 @@ export const updateBuyerValidator = (payload: any) => {
   return validateRequestBody(schema, payload);
 };
 
+export const updateBusinessValidator = (payload: any) => {
+  const schema = z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    finishTourGuide: z.boolean().optional(),
+    phoneNumber: z.string().optional(),
+  });
+
+  return validateRequestBody(schema, payload);
+};
+
+export const updateNewBusinessValidator = (payload: any) => {
+  const schema = z.object({
+    businessName: z.string({
+      required_error: "business Name is required.",
+    }),
+    industry: z.string({
+      required_error: "industry is required.",
+    }),
+  });
+
+  return validateRequestBody(schema, payload);
+};
+
+
 
 export const changePasswordValidator = (
   payload: any
