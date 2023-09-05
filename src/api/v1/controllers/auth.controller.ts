@@ -364,13 +364,13 @@ class AuthController {
     const { accessToken, refreshToken } = await generateAuthToken(account, account.accountType);
   
     let formattedAccount: IBuyer | IBusiness | null = null;
-    if (account && accountType === "Buyer") {
-      formattedAccount = _.pick(account as IBuyer, buyerFields);
-    } else if (account && accountType === "Business") {
-      formattedAccount = _.pick(account as IBusiness, businessFields);
-    } else {
-      throw new BadRequest("Invalid accountType. Supported values: Business, Buyer", "INVALID_REQUEST_PARAMETERS");
-    }
+    // if (account && accountType === "Buyer") {
+    //   formattedAccount = _.pick(account as IBuyer, buyerFields);
+    // } else if (account && accountType === "Business") {
+    //   formattedAccount = _.pick(account as IBusiness, businessFields);
+    // } else {
+    //   throw new BadRequest("Invalid accountType. Supported values: Business, Buyer", "INVALID_REQUEST_PARAMETERS");
+    // }
 
     res.ok({
       authProcessType,
@@ -481,7 +481,7 @@ class AuthController {
         throw new ResourceNotFound("User not found", "RESOURCE_NOT_FOUND");
       }
 
-      if (buyer.authType.password === undefined) {
+      if (buyer.authType.password === undefined || buyer.authMethod !== "Form") {
         throw new BadRequest(
           "Cannot reset password for non-Form login account, continue with another option",
           "INVALID_REQUEST_PARAMETERS"
@@ -637,12 +637,12 @@ class AuthController {
   }
 
   async verifyUserOtpAndChangePassword(req: Request, res: Response) {
-    const { otp, newPassword, accountType } = req.body;
-
-    const { error } = validators.verifyUserOtpAndChangePasswordValidator(
+    
+    const { error, data } = validators.verifyUserOtpAndChangePasswordValidator(
       req.body
     );
     if (error) throw new BadRequest(error.message, error.code);
+    const { otp, newPassword, accountType } = data;
 
     if (accountType === "Buyer") {
       const buyer = await Buyer.findOne({
