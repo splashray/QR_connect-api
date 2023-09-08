@@ -23,8 +23,8 @@ The QR connect api is an ecommerce website
 Before running this project, ensure you have the following prerequisites:
 
 - NodeJS v16+
-- Postgres
-- A [Clerk](https://clerk.com/) account
+- Mongodb
+- Typescript
 
 ## Installation
 
