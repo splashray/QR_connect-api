@@ -1,12 +1,13 @@
 import mongoose, { Document, Model } from "mongoose";
 
 // Define the interface for the product document
-interface IProduct extends Document {
+export interface IProduct extends Document {
   businessId: mongoose.Types.ObjectId;
   productName: string;
   productSlug: string;
   productQrCode: string;
   productDescription: string;
+  productCategory: string;
   productAmountInStock: number;
   productPrice: number;
   productKeyFeatures: string[];
@@ -45,6 +46,10 @@ const ProductSchema = new mongoose.Schema<IProduct>(
     },
 
     productDescription: {
+      type: String,
+      required: true,
+    },
+    productCategory: {
       type: String,
       required: true,
     },

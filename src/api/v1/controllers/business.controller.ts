@@ -50,7 +50,7 @@ class BusinessController {
     const mappedBusinesss = await query.select(businessFields.join(" "));
   
     res.ok(
-      { buyers: mappedBusinesss, totalBusinesss },
+      { businesses: mappedBusinesss, totalBusinesss },
       { page, limit, startDate, endDate }
     );
   }

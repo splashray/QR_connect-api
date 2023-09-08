@@ -11,3 +11,15 @@ export async function generateQRCode(
     throw new Error("QR code generation failed.");
   }
 }
+
+const meaningfulWords = [
+  "buy", "sale", "shop", "cart", "deal", "save", "sale", "promo",
+  "free", "deal", "gift", "fast", "easy", "hot", "new", "best",
+  "top", "bonus", "win", "offer", "mega", "big", "now", "flash"
+];
+
+
+export function generateRandomString() {
+  const randomIndex = Math.floor(Math.random() * meaningfulWords.length);
+  return meaningfulWords[randomIndex];
+}
