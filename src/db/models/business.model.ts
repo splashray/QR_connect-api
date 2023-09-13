@@ -6,7 +6,7 @@ type authMethod = "Form" | "Google";
 
 type UserType = "Buyer" | "Business";
 
-type SubscriptionStatus = "Trial" | "Subscribed" | "Deactivated";
+type SubscriptionStatus = "No-Subscription" | "Free-Trial" | "Subscribed" | "Deactivated";
 
 export interface IBusiness extends Document {
   qrcode: string;
@@ -107,8 +107,8 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     },
     subscriptionStatus: {
       type: String,
-      enum: ["Trial", "Subscribed", "Deactivated"],
-      default: "Trial",
+      enum: ["No-Subscription", "Free-Trial", "Subscribed", "Deactivated"],
+      default: "No-Subscription",
     },
     passwordRecovery: {
       passwordRecoveryOtp: {

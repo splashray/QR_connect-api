@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 type SubscriptionStatus = "active" | "expired" | "failed" | "pending";
 
-interface ISubscription extends Document {
+export interface ISubscription extends Document {
   businessId: mongoose.Types.ObjectId;
   subscriptionPlanId: mongoose.Types.ObjectId;
   paidAt: Date;

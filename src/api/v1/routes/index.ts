@@ -7,6 +7,8 @@ import buyerRouter from "./buyer.route";
 import businessRouter from "./business.route";
 import adminRouter from "./admin.route";
 import productRouter from "./product.route";
+import subscriptionPlanRouter from "./subscriptionPlan.route";
+import subscriptionRouter from "./subscription.route";
 
 const router = express.Router();
 
@@ -17,6 +19,8 @@ router.use("/buyers", buyerRouter);
 router.use("/business", businessRouter);
 router.use("/admins", adminRouter);
 router.use("/products", productRouter);
+router.use("/subscriptionPlans", subscriptionPlanRouter);
+router.use("/subscriptions", subscriptionRouter);
 
 
 

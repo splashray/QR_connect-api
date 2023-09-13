@@ -19,6 +19,7 @@ import {
 import Admin from "../../../db/models/admin.model";
 import Business, { IBusiness } from "../../../db/models/business.model";
 import Buyer, { IBuyer } from "../../../db/models/buyer.model";
+import BusinessWallet from "../../../db/models/businessWallet.model";
 import * as validators from "../validators/auth.validator";
 import googleHelpers from "../../../utils/authGoogleHelpers";
 import {
@@ -90,6 +91,21 @@ class AuthController {
       },
       qrcode: qrCodeImageURL,
     });
+
+    // Check if a wallet already exists for this businessId
+    const existingWallet = await BusinessWallet.findOne({ businessId: business!._id });
+    if (existingWallet) {
+      throw new Conflict("Wallet already exists for this business.", "WALLET_ALREADY_EXISTS");
+    }
+    // Create a wallet for the business
+    const businessWallet = await BusinessWallet.create({
+      businessId: business._id,
+      // Add other wallet data like paypalEmail, accountEmail, and accountNumber here
+    });
+    if (!businessWallet) {
+      await Business.findByIdAndDelete(business._id);
+      throw new Conflict("Account cannot be created.", "WALLET_ALREADY_EXISTS");
+    }
 
     const { accessToken, refreshToken } = await generateAuthToken(
       business,
@@ -332,6 +348,20 @@ class AuthController {
           googleClient,
           payload
         );
+        // Check if a wallet already exists for this businessId
+        const existingWallet = await BusinessWallet.findOne({ businessId: account!._id });
+        if (existingWallet) {
+          throw new Conflict("Wallet already exists for this business.", "WALLET_ALREADY_EXISTS");
+        }
+        // Create a wallet for the business
+        const businessWallet = await BusinessWallet.create({
+          businessId: account!._id,
+          // Add other wallet data like paypalEmail, accountEmail, and accountNumber here
+        });
+        if (!businessWallet) {
+          await Business.findByIdAndDelete(account!._id);
+          throw new Conflict("Account cannot be created.", "WALLET_ALREADY_EXISTS");
+        }
       } else {
         account = await googleHelpers.buyerGoogleSignup(
           code,

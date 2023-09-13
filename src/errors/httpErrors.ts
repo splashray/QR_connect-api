@@ -31,7 +31,8 @@ export type ServerErrorCode =
 export type ConflictErrorCode =
   | "EXISTING_USER_EMAIL"
   | "TEAM_ALREADY_VERIFIED"
-  | "SLUG_UNAVAILABLE";
+  | "SLUG_UNAVAILABLE"
+  | "WALLET_ALREADY_EXISTS";
 
 export type HttpErrorCode =
   | ResourceNotFoundErrorCode

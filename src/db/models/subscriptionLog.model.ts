@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-interface ISubscriptionLog extends Document {
+export interface ISubscriptionLog extends Document {
   businessId: mongoose.Types.ObjectId;
   subscriptionPlanId: mongoose.Types.ObjectId;
   reference: string;

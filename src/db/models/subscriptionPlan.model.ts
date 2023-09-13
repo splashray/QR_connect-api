@@ -1,9 +1,10 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
-interface ISubscriptionPlan extends Document {
+export interface ISubscriptionPlan extends Document {
   name: string;
   price: number;
   duration: number;
+  paypalPlanId: string;
 }
 
 const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
@@ -19,6 +20,9 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
     duration: {
       type: Number,
       required: true,
+    },
+    paypalPlanId: {
+      type: String,
     },
   },
   { timestamps: true },
