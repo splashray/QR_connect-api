@@ -31,5 +31,7 @@ export function errorHandler(
     return res.error(err.statusCode, err.message, err.errorCode);
   }
 
+  console.log(err.response.data)
+
   res.error(500, "An unexpected error occured.", "UNEXPECTED_ERROR");
 }

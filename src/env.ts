@@ -4,7 +4,9 @@ export const envSchema = z.object({
   PORT: z.string().optional(),
   MONGODB_URI: z.string(),
   BASE_URL: z.string(),
-  PAYPAL_ACCESS_TOKEN: z.string(),
+  PAYPAL_CLIENT_ID: z.string(),
+  PAYPAL_SECRET: z.string(),
+
 
   REDIS_URL: z.string(),
   REDIS_HOST: z.string(),

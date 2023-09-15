@@ -7,8 +7,9 @@ import Business from "../../../db/models/business.model";
 import SubscriptionPlan from "../../../db/models/subscriptionPlan.model";
 import Subscription from "../../../db/models/subscription.model";
 import SubscriptionLog from "../../../db/models/subscriptionLog.model";
-import PaypalService from "../../../services/payment.service";
+import { PaypalService } from "../../../services/payment.service";
 import { v4 as uuidv4 } from "uuid"; 
+// import * as moment from "moment-timezone";
 
 const yourBaseURL = process.env.BASE_URL!;
 
@@ -139,46 +140,34 @@ class SubscriptionController {
       throw new BadRequest("Selected plan is a free trial Plan", "INVALID_REQUEST_PARAMETERS");
     }
 
-    // Check if the user already has an active subscription to the free plan
-    const existingFreeTrialSubscription = await Subscription.findOne({
-      businessId,
-      subscriptionPlanId: subscriptionPlan._id,
-      status: "active",
-    });
-
-    if (existingFreeTrialSubscription) {
-      throw new BadRequest(`You are already subscribed to the ${subscriptionPlan.name} Plan`, "INVALID_REQUEST_PARAMETERS");
-    }
-
     // Create a PayPal subscription payload
     const paypalSubscriptionPayload = {
-      plan_id: subscriptionPlan.paypalPlanId, // PayPal Plan ID for the selected subscription plan
-      start_time: "Date.now()", // Replace with the desired start time
-      quantity: "1", // Replace with the desired quantity
+      plan_id: subscriptionPlan.paypalPlanId, 
+      start_time: "2023-09-15T13:30:59+01:00", 
+      quantity: "1", 
       shipping_amount: {
-        currency_code: "USD", // Replace with the desired currency code
-        value: "10.00", // Replace with the desired shipping amount
-        // value: subscriptionPlan.price, // Replace with the desired shipping amount
+        currency_code: "USD",
+        value: subscriptionPlan.price.toString(), 
       },
       subscriber: {
         name: {
-          given_name: business.firstName, // Replace with the subscriber's first name
-          surname: business.lastName, // Replace with the subscriber's last name
+          given_name: business.firstName,
+          surname: business.lastName, 
         },
-        email_address: business.email, // Replace with the subscriber's email address
-        // shipping_address: {
-        //   name: {
-        //     full_name: business.firstName + " " + business.lastName, // Replace with the full name
-        //   },
-        //   address: {
-        //     address_line_1: "123 Main Street", // Replace with the address details
-        //     address_line_2: "Apt 4B", // Replace with additional address details
-        //     admin_area_2: "San Jose", // Replace with the city
-        //     admin_area_1: "CA", // Replace with the state or province
-        //     postal_code: "95131", // Replace with the postal code
-        //     country_code: "US", // Replace with the country code
-        //   },
-        // },
+        email_address: business.email, 
+        shipping_address: {
+          name: {
+            full_name: business.firstName + " " + business.lastName,
+          },
+          address: {
+            address_line_1: "17, Odongunyan", // Replace with the address details
+            address_line_2: "must?", // Replace with additional address details
+            admin_area_2: "lets see!", // Replace with the city
+            admin_area_1: "ikorodu", // Replace with the state or province
+            postal_code: "some number", // Replace with the postal code
+            country_code: "NG", // Replace with the country code
+          },
+        },
       },
       application_context: {
         brand_name: "QR Connect", 
@@ -200,14 +189,35 @@ class SubscriptionController {
       throw new ServerError("Initiate payment failed", "THIRD_PARTY_API_FAILURE");
     }
 
-    return res.ok({ 
-      result,
-      message: "Subscription link created.",
-    });
+    //extract out the link to make payment from the result response
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const approveLink = result.links.find((link: any) => link.rel === "approve"); 
+    console.log("RESULT", result);
+
+    if (approveLink) {
+      const approvalUrl = approveLink.href;
+      // Redirect the user to the approval URL, which will take them to PayPal for payment approval
+      return res.ok({ 
+        approvalUrl,
+        message: "Subscription link created.",
+      });
+    }
+    
   }
 
-  //   authorizationUrl: response.authorization_url,
-  
+
+  // Check if the user already has an active subscription to the free plan
+  // const existingFreeTrialSubscription = await Subscription.findOne({
+  //   businessId,
+  //   subscriptionPlanId: subscriptionPlan._id,
+  //   status: "active",
+  // });
+
+  // if (!existingFreeTrialSubscription) {
+  //   throw new BadRequest(`You are already subscribed to the ${subscriptionPlan.name} Plan`, "INVALID_REQUEST_PARAMETERS");
+  // }
+
+
   // Subscription created successfully, you can save the subscription ID in MongoDB
   // const newSubscription = new Subscription({
   //   userId,
@@ -284,74 +294,3 @@ class SubscriptionController {
 export default new SubscriptionController();
 
 
-// <div id="paypal-button-container-P-17M88242TH834703MMT5ZX6Y"></div>
-// <script src="https://www.paypal.com/sdk/js?client-id=AVExF2v6xU8awClSddRaAHKzOIj8ycI8fOerC-pN2tS8OC_nSLBZMSco4otcEKC1Wbszzr2WIpRP5hr-&vault=true&intent=subscription" data-sdk-integration-source="button-factory"></script>
-// <script>
-//   paypal.Buttons({
-//       style: {
-//           shape: 'pill',
-//           color: 'gold',
-//           layout: 'vertical',
-//           label: 'subscribe'
-//       },
-//       createSubscription: function(data, actions) {
-//         return actions.subscription.create({
-//           /* Creates the subscription */
-//           plan_id: 'P-17M88242TH834703MMT5ZX6Y'
-//         });
-//       },
-//       onApprove: function(data, actions) {
-//         alert(data.subscriptionID); // You can add optional success message for the subscriber here
-//       }
-//   }).render('#paypal-button-container-P-17M88242TH834703MMT5ZX6Y'); // Renders the PayPal button
-// </script>
-
-
-
-// const fetch = require("node-fetch");
-
-// fetch("https://api-m.sandbox.paypal.com/v1/billing/subscriptions", {
-//   method: "POST",
-//   headers: {
-//     "Authorization": "Bearer A21AAGHr9qtiRRXH4oYcQokQgV99rGqEIfgrr8xHCclP0OzmD9KVgg5ppIIg1jzJgQkV4wd02svIvBJyg6cLFJjFow_SjBhxQ",
-//     "Content-Type": "application/json",
-//     "Accept": "application/json",
-//     "PayPal-Request-Id": "SUBSCRIPTION-21092019-001",
-//     "Prefer": "return=representation"
-//   },
-//   body: JSON.stringify({ 
-//     "plan_id": "P-5ML4271244454362WXNWU5NQ", 
-//     "start_time": "2018-11-01T00:00:00Z", 
-//     "quantity": "20", 
-//     "shipping_amount": { 
-//       "currency_code": "USD", "value": "10.00" 
-//     },
-//     "subscriber": { 
-//       "name": { "given_name": "John", "surname": "Doe" }, 
-//       "email_address": "customer@example.com",
-//       "shipping_address": {
-//         "name": { "full_name": "John Doe" }, 
-//         "address": { 
-//           "address_line_1": "2211 N First Street", 
-//           "address_line_2": "Building 17", 
-//           "admin_area_2": "San Jose", 
-//           "admin_area_1": "CA", 
-//           "postal_code": "95131", 
-//           "country_code": "US" 
-//         } 
-//       } 
-//     }, 
-//     "application_context": { 
-//       "brand_name": "walmart", 
-//       "locale": "en-US", 
-//       "shipping_preference": "SET_PROVIDED_ADDRESS", 
-//       "user_action": "SUBSCRIBE_NOW", 
-//       "payment_method": { 
-//         "payer_selected": "PAYPAL", 
-//         "payee_preferred": "IMMEDIATE_PAYMENT_REQUIRED" 
-//       }, 
-//       "return_url": "https://example.com/returnUrl", 
-//       "cancel_url": "https://example.com/cancelUrl" 
-//     } 
-//   })
-// });
