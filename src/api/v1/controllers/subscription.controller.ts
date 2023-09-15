@@ -7,7 +7,7 @@ import Business from "../../../db/models/business.model";
 import SubscriptionPlan from "../../../db/models/subscriptionPlan.model";
 import Subscription from "../../../db/models/subscription.model";
 import SubscriptionLog from "../../../db/models/subscriptionLog.model";
-import { PaypalService } from "../../../services/payment.service";
+import PaypalService from "../../../services/payment.service";
 import { v4 as uuidv4 } from "uuid"; 
 // import * as moment from "moment-timezone";
 
