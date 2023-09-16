@@ -1,7 +1,7 @@
 // paypalService.ts
 import axios, { AxiosResponse } from "axios"; 
 import dotenv from "dotenv";
-import { redisClient } from "../config/redis.config"; 
+// import { redisClient } from "../config/redis.config"; 
 
 dotenv.config();
 
@@ -53,50 +53,24 @@ class PaypalService {
 
   // Function to obtain the PayPal access token from an endpoint
   async getAccessToken(clientId: string, secret: string): Promise<string> {
-    const redisKey = "paypal_access_token";
+    const authString = `${clientId}:${secret}`;
+    const base64AuthString = Buffer.from(authString).toString("base64");
 
-    // Check if the access token is already cached in Redis
-    const cachedToken = await new Promise<string>((resolve) => {
-      redisClient.get(redisKey, (error, token) => {
-        if (error) {
-          console.error("Redis error:", error);
-          resolve(null);
-        } else {
-          resolve(token);
-        }
-      });
-    });
+    const response: AxiosResponse = await axios.post(
+      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+      "grant_type=client_credentials",
+      {
+        headers: {
+          Authorization: `Basic ${base64AuthString}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
 
-    if (cachedToken) {
-      return cachedToken;
-    } else {
-      const authString = `${clientId}:${secret}`;
-      const base64AuthString = Buffer.from(authString).toString("base64");
-
-      const response: AxiosResponse = await axios.post(
-        "https://api-m.sandbox.paypal.com/v1/oauth2/token",
-        "grant_type=client_credentials",
-        {
-          headers: {
-            Authorization: `Basic ${base64AuthString}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-
-      const { access_token, expires_in } = response.data;
-
-      // Cache the access token in Redis with an expiration time
-      // Use type assertion (as any) to bypass TypeScript type checking
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      redisClient.set(redisKey, access_token, "EX", expires_in as any);
-
-      return access_token;
-    }
+    const { access_token } = response.data;
+    return access_token;
   }
 
-
-  
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createSubscription( paypalSubscriptionPayload: PaypalSubscriptionPayload): Promise<any> {
@@ -152,8 +126,26 @@ export default new PaypalService();
 
 
 
-// // Function to obtain the PayPal access token from an endpoint
-// async getAccessToken(clientId: string, secret: string): Promise<string> {
+
+// Function to obtain the PayPal access token from an endpoint
+//  async getAccessToken(clientId: string, secret: string): Promise<string> {
+//   const redisKey = "paypal_access_token";
+
+// Check if the access token is already cached in Redis
+// const cachedToken = await new Promise<string>((resolve) => {
+//   redisClient.get(redisKey, (error, token) => {
+//     if (error) {
+//       console.error("Redis error:", error);
+//       resolve(null);
+//     } else {
+//       resolve(token);
+//     }
+//   });
+// });
+
+// if (cachedToken) {
+//   return cachedToken;
+// } else {
 //   const authString = `${clientId}:${secret}`;
 //   const base64AuthString = Buffer.from(authString).toString("base64");
 
@@ -168,6 +160,13 @@ export default new PaypalService();
 //     }
 //   );
 
-//   const { access_token } = response.data;
+//   const { access_token, expires_in } = response.data;
+
+//   // Cache the access token in Redis with an expiration time
+//   // Use type assertion (as any) to bypass TypeScript type checking
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   redisClient.set(redisKey, access_token, "EX", expires_in as any);
+
 //   return access_token;
+// }
 // }

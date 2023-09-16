@@ -32,7 +32,7 @@ class EmailService {
         otp: data.otp,
       },
     };
-    await emailQueue.add("send-order-suceess", jobData);
+    await emailQueue.add("reset-password", jobData);
   }
 
   //Success order
@@ -46,7 +46,7 @@ class EmailService {
         transactionRef: data.transactionRef,
       },
     };
-    await emailQueue.add("send-order-suceess", jobData);
+    await emailQueue.add("order-purchase-suceess", jobData);
   }
 
   //Failed order
@@ -60,7 +60,7 @@ class EmailService {
         transactionRef: data.transactionRef,
       },
     };
-    await emailQueue.add("send-order-failed", jobData);
+    await emailQueue.add("order-purchase-failed", jobData);
   }
 
   //new subscription
@@ -77,6 +77,7 @@ class EmailService {
     };
     await emailQueue.add("new-subscription", jobData);
   }
+  
 }
 
 export default new EmailService();

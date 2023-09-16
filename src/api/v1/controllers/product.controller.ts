@@ -14,6 +14,10 @@ import {
   getEndDate,
 } from "../../../utils/dataFilters";
 import mongoose from "mongoose";
+import { promises as fsPromises } from "fs";
+import path from "path";
+import { uploadPicture } from "../../../services/file.service";
+
 // import  redisClient from "../../../config/redis.config";
 // const PRODUCT_CACHE_EXPIRATION = 60 * 60 * 24 * 1; // 1 day
 
@@ -331,6 +335,62 @@ class ProductController {
     res.noContent();
 
   }
+
+  // Upload Product Images
+  async uploadProductImages(req: Request, res: Response) {
+    const businessId = req.loggedInAccount._id;
+    if (!businessId) {
+      throw new ResourceNotFound("Business not found.", "RESOURCE_NOT_FOUND");
+    }
+    let uploadedImages: Express.Multer.File[] = [];
+
+    if (!req.files) {
+      throw new BadRequest(
+        "No images provided.",
+        "MISSING_REQUIRED_FIELD"
+      );
+    }
+
+    if (Array.isArray(req.files)) {
+      // If req.files is an array, assign it directly
+      uploadedImages = req.files as Express.Multer.File[];
+    } else {
+      // If req.files is an object with fieldnames, extract the files
+      uploadedImages = Object.values(req.files as {
+        [fieldname: string]: Express.Multer.File[];
+      }).reduce((acc, files) => acc.concat(files), []);
+    }
+  
+    if (!uploadedImages || uploadedImages.length === 0) {
+      throw new BadRequest(
+        "No images provided.",
+        "MISSING_REQUIRED_FIELD"
+      );
+    }
+
+    const uploadedUrls = [];
+
+    for (const uploadedFile of uploadedImages) {
+      const  productPictureExtension = path.extname(uploadedFile.originalname);
+      const productPictureKey = await uploadPicture(
+        uploadedFile.path,
+        "Product-images",
+        productPictureExtension
+      );
+      await fsPromises.unlink(uploadedFile.path);
+
+      const key = `https://qrconnect-data.s3.amazonaws.com/${productPictureKey}`;
+      uploadedUrls.push(key);
+    }
+
+    res.ok({
+      message: "Product images uploaded successfully.",
+      imageUrls: uploadedUrls,
+    });
+  }
+
+
+
 }
 
 export default new ProductController();

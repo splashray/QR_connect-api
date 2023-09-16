@@ -9,9 +9,22 @@ import Subscription from "../../../db/models/subscription.model";
 import SubscriptionLog from "../../../db/models/subscriptionLog.model";
 import PaypalService from "../../../services/payment.service";
 import { v4 as uuidv4 } from "uuid"; 
+import {
+  getLimit,
+  getPage,
+  getStartDate,
+  getEndDate,
+} from "../../../utils/dataFilters";
+
 // import * as moment from "moment-timezone";
 
 const yourBaseURL = process.env.BASE_URL!;
+type QueryParams = {
+  startDate?: Date; 
+  endDate?: Date; 
+  limit?: string; 
+  page?: string; 
+};
 
 class SubscriptionController {
   // Create a new free trial subscription
@@ -205,17 +218,55 @@ class SubscriptionController {
     
   }
 
-  // // Cancel subscription
-  // async cancelSubscription(req: Request, res: Response) {
-  //   const businessId = req.loggedInAccount._id;
+  // Cancel subscription
+  async cancelSubscription(req: Request, res: Response) {
+    const businessId = req.loggedInAccount._id;
+    res.ok(businessId);
     
-  // }
+  }
 
-  // // Activate subscription
-  // async activateSubscription(req: Request, res: Response) {
-  //   const businessId = req.loggedInAccount._id;
-    
-  // }
+  // Activate subscription
+  async activateSubscription(req: Request, res: Response) {
+    const businessId = req.loggedInAccount._id;
+    res.ok(businessId);
+  }
+
+  // Get subscription by businessId
+  async getSubscriptionByBusinessId(req: Request, res: Response) {
+    const { businessId } = req.params;
+    if (!businessId) {
+      throw new ResourceNotFound("business Id is missing.", "RESOURCE_NOT_FOUND");
+    }
+    const subscription = await Subscription.findOne({businessId: businessId});
+    if (!subscription) {
+      throw new ResourceNotFound(`Subscription with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
+    }
+    res.ok(subscription);
+  }
+
+  // Get all subscriptions by admin
+  async getSubscriptionsByAdmin(req: Request, res: Response) {
+    const queryParams: QueryParams = req.query;
+    const startDate = getStartDate(queryParams.startDate);
+    const endDate = getEndDate(queryParams.endDate);
+    const limit = getLimit(queryParams.limit);
+    const page = getPage(queryParams.page);
+  
+    const query = Subscription.find({
+      createdAt: { $gte: startDate, $lte: endDate },
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .skip(limit * (page - 1));
+  
+    const totalSubscriptions = await Subscription.countDocuments(query);
+  
+    res.ok(
+      { subscription: query, totalSubscriptions },
+      { page, limit, startDate, endDate }
+    );
+  }
+
 
 }
 

@@ -1,11 +1,15 @@
 import express from "express";
 import productController from "../controllers/product.controller";
 import { auth } from "../../middlewares/authMiddleware";
+import upload from "../../middlewares/multerMiddleware";
 
 const productRouter = express.Router();
 
 // Create a new product
 productRouter.post("/", auth({ accountType: ["business"] }), productController.createProduct);
+
+// picture uplaod
+productRouter.post("/upload-images", auth({ accountType: ["business"] }), upload.array("images", 3), productController.uploadProductImages);
 
 // Get all products - Admin
 productRouter.get("/", auth({ accountType: ["admin"] }), productController.getProducts);

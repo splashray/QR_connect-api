@@ -2,25 +2,26 @@ import express from "express";
 import SubscriptionController from "../controllers/subscription.controller";
 import { auth } from "../../middlewares/authMiddleware";
 
-const subscriptionPlanRouter = express.Router();
+const subscriptionRouter = express.Router();
 
 
 // Create a free trial subscription by business/admin for business
-subscriptionPlanRouter.post( "/create/freetrial", auth({ accountType: ["business"] }), SubscriptionController.createFreeTrialSubscription);
+subscriptionRouter.post( "/create/freetrial", auth({ accountType: ["business"] }), SubscriptionController.createFreeTrialSubscription);
 
 // Create a new subscription by business/admin for business
-subscriptionPlanRouter.post( "/create/paypal", auth({ accountType: ["business"] }), SubscriptionController.createSubscriptionWithPaypal);
+subscriptionRouter.post( "/create/paypal", auth({ accountType: ["business"] }), SubscriptionController.createSubscriptionWithPaypal);
 
-// // Get all subscription plans
-// subscriptionPlanRouter.get("/", SubscriptionPlanController.getSubscriptionPlans);
+// Cancel a subscription by business/admin for business
+subscriptionRouter.post( "/cancel/paypal", auth({ accountType: ["business"] }), SubscriptionController.cancelSubscription);
 
-// // Get a subscription plan by ID
-// subscriptionPlanRouter.get("/:subscriptionPlanId", SubscriptionPlanController.getSubscriptionPlanById);
+// Activate Subscription by business/admin for business
+subscriptionRouter.post( "/activate/paypal", auth({ accountType: ["business"] }), SubscriptionController.activateSubscription);
 
-// // Update a subscription plan by ID (admin route)
-// subscriptionPlanRouter.put( "/:subscriptionPlanId", auth({ accountType: ["admin"] }), SubscriptionPlanController.updateSubscriptionPlan );
+// Get a subscription by ID
+subscriptionRouter.get("/:businessId", SubscriptionController.getSubscriptionByBusinessId);
 
-// // Delete a subscription plan by ID (admin route)
-// subscriptionPlanRouter.delete( "/:subscriptionPlanId", auth({ accountType: ["admin"] }),SubscriptionPlanController.deleteSubscriptionPlan );
+// Get all subscriptions by admin
+subscriptionRouter.get("/", SubscriptionController.getSubscriptionsByAdmin);
 
-export default subscriptionPlanRouter;
+
+export default subscriptionRouter;
