@@ -205,92 +205,18 @@ class SubscriptionController {
     
   }
 
-
-  // Check if the user already has an active subscription to the free plan
-  // const existingFreeTrialSubscription = await Subscription.findOne({
-  //   businessId,
-  //   subscriptionPlanId: subscriptionPlan._id,
-  //   status: "active",
-  // });
-
-  // if (!existingFreeTrialSubscription) {
-  //   throw new BadRequest(`You are already subscribed to the ${subscriptionPlan.name} Plan`, "INVALID_REQUEST_PARAMETERS");
+  // // Cancel subscription
+  // async cancelSubscription(req: Request, res: Response) {
+  //   const businessId = req.loggedInAccount._id;
+    
   // }
 
-
-  // Subscription created successfully, you can save the subscription ID in MongoDB
-  // const newSubscription = new Subscription({
-  //   userId,
-  //   subscriptionPlanId,
-  //   paypalSubscriptionId: subscription.id,
-  //   status: "active", // Set initial status as active
-  //   expiresAt: new Date(subscription.current_period_end * 1000), // Convert PayPal timestamp to Date
-  // });
-
-  // Update a subscription (e.g., change plan or cancel)
-  //   async updateSubscription(req: Request, res: Response) {
-  //     try {
-  //       // Extract necessary data from the request body
-  //       const { userId, subscriptionId, newPlanId, cancelSubscription } = req.body;
-
-  //       // Retrieve the current subscription from MongoDB
-  //       const currentSubscription = await Subscription.findById(subscriptionId);
-
-  //       if (!currentSubscription) {
-  //         return res.status(404).json({ error: "Subscription not found" });
-  //       }
-
-  //       // If cancelSubscription is true, cancel the PayPal subscription
-  //       if (cancelSubscription) {
-  //         paypal.subscriptions.cancel(userId, currentSubscription.paypalSubscriptionId, (error, canceledSubscription) => {
-  //           if (error) {
-  //             console.error("PayPal subscription cancellation error:", error);
-  //             return res.status(500).json({ error: "Failed to cancel PayPal subscription" });
-  //           }
-
-  //           // Update the subscription status in MongoDB
-  //           currentSubscription.status = "canceled";
-  //           currentSubscription.save()
-  //             .then(() => {
-  //               res.status(200).json({ message: "Subscription canceled successfully" });
-  //             })
-  //             .catch((saveError) => {
-  //               console.error("Failed to update subscription status in MongoDB:", saveError);
-  //               res.status(500).json({ error: "Failed to update subscription status in MongoDB" });
-  //             });
-  //         });
-  //       } else {
-  //         // If changing to a new plan, update the PayPal subscription
-  //         const updatedPaypalSubscription = {
-  //           plan_id: newPlanId, // PayPal Plan ID for the new subscription plan
-  //         };
-
-  //         paypal.subscriptions.update(userId, currentSubscription.paypalSubscriptionId, updatedPaypalSubscription, (error, subscription) => {
-  //           if (error) {
-  //             console.error("PayPal subscription update error:", error);
-  //             return res.status(500).json({ error: "Failed to update PayPal subscription" });
-  //           }
-
-  //           // Update the subscription plan ID in MongoDB
-  //           currentSubscription.subscriptionPlanId = newPlanId;
-  //           currentSubscription.save()
-  //             .then(() => {
-  //               res.status(200).json({ message: "Subscription updated successfully" });
-  //             })
-  //             .catch((saveError) => {
-  //               console.error("Failed to update subscription plan in MongoDB:", saveError);
-  //               res.status(500).json({ error: "Failed to update subscription plan in MongoDB" });
-  //             });
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error("Subscription update error:", error);
-  //       res.status(500).json({ error: "Internal Server Error" });
-  //     }
-  //   }
+  // // Activate subscription
+  // async activateSubscription(req: Request, res: Response) {
+  //   const businessId = req.loggedInAccount._id;
+    
+  // }
 
 }
 
 export default new SubscriptionController();
-
-

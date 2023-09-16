@@ -5,6 +5,7 @@ type SubscriptionStatus = "active" | "expired" | "failed" | "pending";
 export interface ISubscription extends Document {
   businessId: mongoose.Types.ObjectId;
   subscriptionPlanId: mongoose.Types.ObjectId;
+  paypalSubscriptionId: string
   paidAt: Date;
   expiresAt: Date;
   status: SubscriptionStatus;
@@ -21,6 +22,9 @@ const subscriptionSchema = new Schema<ISubscription>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "SubscriptionPlan",
       required: true,
+    },
+    paypalSubscriptionId: {
+      type: String,
     },
     paidAt: {
       type: Date,

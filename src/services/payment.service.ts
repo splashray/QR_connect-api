@@ -122,6 +122,30 @@ class PaypalService {
   }
 
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async cancelSubscription( reason: string, paypalSubscriptionId: string): Promise<any> {
+    const accessToken = await this.getAccessToken(process.env.PAYPAL_CLIENT_ID, process.env.PAYPAL_SECRET);
+  
+    const payload = reason;
+  
+    const response: AxiosResponse = await axios.post(
+      `https://api-m.sandbox.paypal.com/v1/billing/subscriptions/${paypalSubscriptionId}/cancel`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "PayPal-Request-Id": "SUBSCRIPTION-QR-Conect",
+          "X-PAYPAL-SECURITY-CONTEXT": "{\"consumer\":{\"accountNumber\":1181198218909172527,\"merchantId\":\"5KW8F2FXKX5HA\"},\"merchant\":{\"accountNumber\":1659371090107732880,\"merchantId\":\"2J6QB8YJQSJRJ\"},\"apiCaller\":{\"clientId\":\"AdtlNBDhgmQWi2xk6edqJVKklPFyDWxtyKuXuyVT-OgdnnKpAVsbKHgvqHHP\",\"appId\":\"APP-6DV794347V142302B\",\"payerId\":\"2J6QB8YJQSJRJ\",\"accountNumber\":\"1659371090107732880\"},\"scopes\":[\"https://api-m.paypal.com/v1/subscription/.*\",\"https://uri.paypal.com/services/subscription\",\"openid\"]}",
+        },
+      }
+    );
+  
+    return response.data;
+  }
+
+    
 }
 
 export default new PaypalService();
