@@ -41,6 +41,22 @@ async function deleteImage(key: string): Promise<void> {
 // console.log("Image deleted successfully.");
 
 
+// Define the function to delete images from AWS (replace with your implementation)
+async function deleteImagesFromAWS(imageKeys: string[]) {
+  for (const imageKey of imageKeys) {
+    const bucketParams = {
+      Bucket: s3Bucket, 
+      Key: imageKey,
+    };
+
+    try {
+      await s3Client.send(new DeleteObjectCommand(bucketParams));
+      console.log(`Image '${imageKey}' deleted from AWS.`);
+    } catch (error) {
+      console.error(`Failed to delete image '${imageKey}' from AWS: ${error}`);
+    }
+  }
+}
 
 
 
@@ -96,6 +112,7 @@ async function deleteImage(key: string): Promise<void> {
 export {
   uploadPicture,
   deleteImage,
+  deleteImagesFromAWS
 //   getImageUrl,
 //   reduceImageSize,
 //   resizeAndAddWatermark,
