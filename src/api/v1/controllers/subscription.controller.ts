@@ -15,8 +15,7 @@ import {
   getStartDate,
   getEndDate,
 } from "../../../utils/dataFilters";
-
-// import * as moment from "moment-timezone";
+import * as moment from "moment-timezone";
 
 const yourBaseURL = process.env.BASE_URL!;
 type QueryParams = {
@@ -79,10 +78,12 @@ class SubscriptionController {
     const newSubscription = new Subscription({
       businessId,
       subscriptionPlanId: subscriptionPlan._id,
+      subscriptionPlanName: subscriptionPlan.name,
       status: "active",
       paidAt: new Date(),
       expiresAt: expirationDate,
     // paypalSubscriptionId
+    // subscribedIdFromPaypal
     });
 
     const savedFreeTrialSubscription =  await newSubscription.save();
@@ -152,15 +153,23 @@ class SubscriptionController {
     if (subscriptionPlan.name === "Free Trial Package") {
       throw new BadRequest("Selected plan is a free trial Plan", "INVALID_REQUEST_PARAMETERS");
     }
+    
+    // Detect the user's timezone based on their browser settings
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // Get the current time in the detected user's timezone
+    const userCurrentTime = moment.tz(userTimeZone);
+    // Calculate the start time by adding 1 hour to the current time
+    const startTime = userCurrentTime.add(1, "hours").toISOString();
+    console.log(startTime)
 
     // Create a PayPal subscription payload
     const paypalSubscriptionPayload = {
       plan_id: subscriptionPlan.paypalPlanId, 
-      start_time: "2023-09-15T13:30:59+01:00", 
+      start_time: startTime, 
       quantity: "1", 
       shipping_amount: {
         currency_code: "USD",
-        value: subscriptionPlan.price.toString(), 
+        value: "0", 
       },
       subscriber: {
         name: {
@@ -168,24 +177,11 @@ class SubscriptionController {
           surname: business.lastName, 
         },
         email_address: business.email, 
-        shipping_address: {
-          name: {
-            full_name: business.firstName + " " + business.lastName,
-          },
-          address: {
-            address_line_1: "17, Odongunyan", // Replace with the address details
-            address_line_2: "must?", // Replace with additional address details
-            admin_area_2: "lets see!", // Replace with the city
-            admin_area_1: "ikorodu", // Replace with the state or province
-            postal_code: "some number", // Replace with the postal code
-            country_code: "NG", // Replace with the country code
-          },
-        },
       },
       application_context: {
-        brand_name: "QR Connect", 
+        brand_name: "QR Conect", 
         locale: "en-US", 
-        shipping_preference: "SET_PROVIDED_ADDRESS",
+        shipping_preference: "NO_SHIPPING",
         user_action: "SUBSCRIBE_NOW",
         payment_method: {
           payer_selected: "PAYPAL",
@@ -194,6 +190,7 @@ class SubscriptionController {
         return_url: `${yourBaseURL}/returnUrl`,
         cancel_url: `${yourBaseURL}/cancelUrl`,
       },
+      custom_id: business._id,
     };
 
     // Call the createSubscription function from PaypalService
@@ -252,18 +249,15 @@ class SubscriptionController {
     const limit = getLimit(queryParams.limit);
     const page = getPage(queryParams.page);
   
-    const query = Subscription.find({
+    const subscriptions = await Subscription.find({
       createdAt: { $gte: startDate, $lte: endDate },
     })
       .sort({ createdAt: 1 })
       .limit(limit)
       .skip(limit * (page - 1));
-  
-    const totalSubscriptions = await Subscription.countDocuments(query);
-  
-    res.ok(
-      { subscription: query, totalSubscriptions },
-      { page, limit, startDate, endDate }
+    const totalSubscriptions = await Subscription.countDocuments(subscriptions);
+
+    res.ok({ subscriptions, totalSubscriptions }, { page, limit, startDate, endDate }
     );
   }
 

@@ -8,6 +8,7 @@ dotenv.config();
 // Define a type or interface for the subscription payload
 interface PaypalSubscriptionPayload {
   plan_id: string;
+  custom_id: string;
   start_time?: string;
   quantity: string;
   shipping_amount: {
@@ -20,19 +21,6 @@ interface PaypalSubscriptionPayload {
       surname: string;
     };
     email_address: string;
-    shipping_address: {
-      name: {
-        full_name: string;
-      };
-      address: {
-        address_line_1: string;
-        address_line_2: string;
-        admin_area_2: string;
-        admin_area_1: string;
-        postal_code: string;
-        country_code: string;
-      };
-    };
   };
   application_context: {
     brand_name: string;
@@ -49,7 +37,6 @@ interface PaypalSubscriptionPayload {
 }
 
 class PaypalService {
-  // Function to obtain the PayPal access token from an endpoint
   // Function to obtain the PayPal access token from an endpoint
   async getAccessToken(clientId: string, secret: string): Promise<string> {
     const redisKey = "paypal_access_token";
@@ -84,19 +71,19 @@ class PaypalService {
       EX: expires_in,
       NX: true,
     });
-
     return access_token;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async createSubscription(
     paypalSubscriptionPayload: PaypalSubscriptionPayload
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     const accessToken = await this.getAccessToken(
       process.env.PAYPAL_CLIENT_ID,
       process.env.PAYPAL_SECRET
     );
 
+    
     const payload = paypalSubscriptionPayload;
 
     const response: AxiosResponse = await axios.post(
@@ -116,10 +103,10 @@ class PaypalService {
     return response.data;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async cancelSubscription(
     reason: string,
     paypalSubscriptionId: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     const accessToken = await this.getAccessToken(
       process.env.PAYPAL_CLIENT_ID,
@@ -138,7 +125,7 @@ class PaypalService {
           Accept: "application/json",
           "PayPal-Request-Id": "SUBSCRIPTION-QR-Conect",
           "X-PAYPAL-SECURITY-CONTEXT":
-            '{"consumer":{"accountNumber":1181198218909172527,"merchantId":"5KW8F2FXKX5HA"},"merchant":{"accountNumber":1659371090107732880,"merchantId":"2J6QB8YJQSJRJ"},"apiCaller":{"clientId":"AdtlNBDhgmQWi2xk6edqJVKklPFyDWxtyKuXuyVT-OgdnnKpAVsbKHgvqHHP","appId":"APP-6DV794347V142302B","payerId":"2J6QB8YJQSJRJ","accountNumber":"1659371090107732880"},"scopes":["https://api-m.paypal.com/v1/subscription/.*","https://uri.paypal.com/services/subscription","openid"]}',
+            "{\"consumer\":{\"accountNumber\":1181198218909172527,\"merchantId\":\"5KW8F2FXKX5HA\"},\"merchant\":{\"accountNumber\":1659371090107732880,\"merchantId\":\"2J6QB8YJQSJRJ\"},\"apiCaller\":{\"clientId\":\"AdtlNBDhgmQWi2xk6edqJVKklPFyDWxtyKuXuyVT-OgdnnKpAVsbKHgvqHHP\",\"appId\":\"APP-6DV794347V142302B\",\"payerId\":\"2J6QB8YJQSJRJ\",\"accountNumber\":\"1659371090107732880\"},\"scopes\":[\"https://api-m.paypal.com/v1/subscription/.*\",\"https://uri.paypal.com/services/subscription\",\"openid\"]}",
         },
       }
     );

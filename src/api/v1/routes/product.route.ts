@@ -45,9 +45,9 @@ export default productRouter;
 //     "data": {
 //         "message": "Product images uploaded successfully.",
 //         "imageUrls": [
-//             "https://raveboking.s3.amazonaws.com/Product-images/672dccae-3967-47ef-aa69-fb31a76cdae5.jpg",
-//             "https://raveboking.s3.amazonaws.com/Product-images/0ab22547-b9d2-412c-9bfb-32759c3b11ba.jpg",
-//             "https://raveboking.s3.amazonaws.com/Product-images/818b5518-776a-4980-ac69-8e1e3a057512.jpg"
+//             "https://ravebooking.s3.amazonaws.com/Product-images/672dccae-3967-47ef-aa69-fb31a76cdae5.jpg",
+//             "https://ravebooking.s3.amazonaws.com/Product-images/0ab22547-b9d2-412c-9bfb-32759c3b11ba.jpg",
+//             "https://ravebooking.s3.amazonaws.com/Product-images/818b5518-776a-4980-ac69-8e1e3a057512.jpg"
 //         ]
 //     }
 // }

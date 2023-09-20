@@ -17,11 +17,12 @@ subscriptionRouter.post( "/cancel/paypal", auth({ accountType: ["business"] }), 
 // Activate Subscription by business/admin for business
 subscriptionRouter.post( "/activate/paypal", auth({ accountType: ["business"] }), SubscriptionController.activateSubscription);
 
-// Get a subscription by ID
-subscriptionRouter.get("/:businessId", SubscriptionController.getSubscriptionByBusinessId);
-
 // Get all subscriptions by admin
-subscriptionRouter.get("/", SubscriptionController.getSubscriptionsByAdmin);
+subscriptionRouter.get("/all", auth({ accountType: ["admin"] }),  SubscriptionController.getSubscriptionsByAdmin);
+
+// Get a subscription by ID
+subscriptionRouter.get("/:businessId", auth({ accountType: ["business"] }),  SubscriptionController.getSubscriptionByBusinessId);
+
 
 
 export default subscriptionRouter;

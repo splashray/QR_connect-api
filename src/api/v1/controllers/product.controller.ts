@@ -44,7 +44,7 @@ class ProductController {
 
     // Check if the productSlug already exists and keep appending random characters until it's unique
     while (true) {
-      const existingProduct = await Product.findOne({ productSlug });
+      const existingProduct = await Product.findOne({ productSlug, businessId });
       if (!existingProduct) {
       // Slug is unique, break the loop
         break;
@@ -377,49 +377,55 @@ class ProductController {
 
   // Delete single media
   async deleteSingleMedia(req: Request, res: Response){
-    // const {imageId, productId} = req.query;
-    // console.log(imageId, productId);
-    // if (!mongoose.Types.ObjectId.isValid(productId as string)) {
-    //   throw new BadRequest("productId is not a valid ObjectId", "INVALID_REQUEST_PARAMETERS");
-    // }
-    // if (!productId || !imageId) {
-    //   throw new ResourceNotFound("Query parameters are missing", "RESOURCE_NOT_FOUND");
-    // }
+    try{
+      const {imageId, productId} = req.query;
+      console.log(imageId, productId);
+      if (!mongoose.Types.ObjectId.isValid(productId as string)) {
+        throw new BadRequest("productId is not a valid ObjectId", "INVALID_REQUEST_PARAMETERS");
+      }
+      if (!productId || !imageId) {
+        throw new ResourceNotFound("Query parameters are missing", "RESOURCE_NOT_FOUND");
+      }
     
-    // Find the product by ID
-    // const product = await Product.findById(productId);
-    // console.log(product)
-    // if (!product) {
-    //   throw new BadRequest(`Product with ID ${productId} not found.`, "INVALID_REQUEST_PARAMETERS");
-    // }
+      // Find the product by ID
+      const product = await Product.findById(productId);
+      console.log(product)
+      if (!product) {
+        throw new BadRequest(`Product with ID ${productId} not found.`, "INVALID_REQUEST_PARAMETERS");
+      }
   
-    // // Find the index of the mediaImage with the given imageId
-    // const imageIndex = product.productImages.findIndex((img: string) => img === imageId);
-    // console.log(imageIndex)
-    // if (imageIndex === -1) {
-    //   throw new BadRequest(`Image with ${imageId} not found in product.`,"INVALID_REQUEST_PARAMETERS");
-    // }
+      // Find the index of the mediaImage with the given imageId
+      const imageIndex = product.productImages.findIndex((img: string) => img === imageId);
+      console.log(imageIndex)
+      if (imageIndex === -1) {
+        throw new BadRequest(`Image with ${imageId} not found in product.`,"INVALID_REQUEST_PARAMETERS");
+      }
   
-    // // Get the image URL (or key) to delete from AWS
-    // const imageKey = product.productImages[imageIndex];
-    // console.log(imageKey)
-    // // Delete the image from AWS (replace with your actual deletion logic)
-    // await deleteImage(imageKey);
+      // Get the image URL (or key) to delete from AWS
+      const imageKey = product.productImages[imageIndex];
+      console.log(imageKey)
+      // Delete the image from AWS (replace with your actual deletion logic)
+      await deleteImage(imageKey);
   
-    // // Remove the mediaImage from the product's productImages array
-    // product.productImages.splice(imageIndex, 1);
-    // console.log(product)
-    // // Update the product record in the database
-    // const updateProduct = await product.save();
+      // Remove the mediaImage from the product's productImages array
+      product.productImages.splice(imageIndex, 1);
+      console.log(product)
+      // Update the product record in the database
+      const updateProduct = await product.save();
 
-    // if (!updateProduct) {
-    //   throw new BadRequest("Product update failed.", "INVALID_REQUEST_PARAMETERS");
-    // }
+      if (!updateProduct) {
+        throw new BadRequest("Product update failed.", "INVALID_REQUEST_PARAMETERS");
+      }
   
-    // return res.ok({
-    //   product: updateProduct,
-    //   message: `Image with ${imageId} deleted successfully`,
-    // });
+      return res.ok({
+        product: updateProduct,
+        message: `Image with ${imageId} deleted successfully`,
+      });
+
+    }catch(e){
+      console.log("error", e)
+    }
+    
   }
 
 

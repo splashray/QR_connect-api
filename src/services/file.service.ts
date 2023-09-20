@@ -6,6 +6,8 @@ import {
 //   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
+import url from "url";
+
 // import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 
@@ -29,11 +31,20 @@ async function uploadPicture( file: string, folderName: string, fileExtension: s
 
 
 async function deleteImage(key: string): Promise<void> {
+  const parsedUrl = url.parse(key);
+  const objectKey = parsedUrl.pathname?.substring(1); 
+
   const bucketParams = {
     Bucket: s3Bucket,
-    Key: key,
+    Key: objectKey,
   };
-  await s3Client.send(new DeleteObjectCommand(bucketParams));
+  try {
+    await s3Client.send(new DeleteObjectCommand(bucketParams));
+    console.log("Image  deleted from AWS.");
+  } catch (error) {
+    console.error(`Failed to delete image  from AWS: ${error}`);
+  }
+
 }
 // To use deleteImage for example:
 // const imageKey = "path/to/image.jpg";
@@ -42,18 +53,26 @@ async function deleteImage(key: string): Promise<void> {
 
 
 // Define the function to delete images from AWS (replace with your implementation)
-async function deleteImagesFromAWS(imageKeys: string[]) {
-  for (const imageKey of imageKeys) {
-    const bucketParams = {
-      Bucket: s3Bucket, 
-      Key: imageKey,
-    };
+async function deleteImagesFromAWS(imageUrls: string[]) {
+  for (const imageUrl of imageUrls) {
+    // Parse the URL to get the pathname, which represents the object key
+    const parsedUrl = url.parse(imageUrl);
+    const objectKey = parsedUrl.pathname?.substring(1); // Remove the leading slash
+    if (objectKey) {
+      const bucketParams = {
+        Bucket: s3Bucket,
+        Key: objectKey,
+      };
 
-    try {
-      await s3Client.send(new DeleteObjectCommand(bucketParams));
-      console.log(`Image '${imageKey}' deleted from AWS.`);
-    } catch (error) {
-      console.error(`Failed to delete image '${imageKey}' from AWS: ${error}`);
+
+      try {
+        await s3Client.send(new DeleteObjectCommand(bucketParams));
+        console.log(`Image '${objectKey}' deleted from AWS.`);
+      } catch (error) {
+        console.error(`Failed to delete image '${objectKey}' from AWS: ${error}`);
+      }
+    } else {
+      console.error(`Invalid image URL: ${imageUrl}`);
     }
   }
 }
