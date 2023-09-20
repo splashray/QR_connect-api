@@ -202,7 +202,7 @@ class SubscriptionController {
     //extract out the link to make payment from the result response
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const approveLink = result.links.find((link: any) => link.rel === "approve"); 
-    console.log("RESULT", result);
+    // console.log("RESULT", result);
 
     if (approveLink) {
       const approvalUrl = approveLink.href;

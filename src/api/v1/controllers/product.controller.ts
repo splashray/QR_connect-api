@@ -269,7 +269,7 @@ class ProductController {
 
       // Check if the productSlug already exists and keep appending random characters until it's unique
       while (true) {
-        const existingProduct = await Product.findOne({ productSlug });
+        const existingProduct = await Product.findOne({ productSlug, businessId });
         if (!existingProduct) {
         // Slug is unique, break the loop
           break;
