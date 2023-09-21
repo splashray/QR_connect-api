@@ -8,7 +8,9 @@ import businessRouter from "./business.route";
 import adminRouter from "./admin.route";
 import productRouter from "./product.route";
 import subscriptionPlanRouter from "./subscriptionPlan.route";
+import subscriptionLogRouter from "./subscriptionLog.route";
 import subscriptionRouter from "./subscription.route";
+import webhookRouter from "./webhook.route";
 
 const router = express.Router();
 
@@ -20,7 +22,9 @@ router.use("/business", businessRouter);
 router.use("/admins", adminRouter);
 router.use("/products", productRouter);
 router.use("/subscriptionPlans", subscriptionPlanRouter);
+router.use("/subscriptionLogs", subscriptionLogRouter);
 router.use("/subscriptions", subscriptionRouter);
+router.use("/webhooks", webhookRouter);
 
 
 

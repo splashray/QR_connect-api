@@ -5,6 +5,8 @@ import { redisClient } from "../config/redis.config";
 
 dotenv.config();
 
+const webhookId =  process.env.PAYPAL_WEBHOOK_ID;
+
 // Define a type or interface for the subscription payload
 interface PaypalSubscriptionPayload {
   plan_id: string;
@@ -36,6 +38,42 @@ interface PaypalSubscriptionPayload {
   };
 }
 
+// Define the type for your webhook body
+interface WebhookBody {
+  transmission_id: string;
+  transmission_time: string;
+  cert_url: string;
+  auth_algo: string;
+  transmission_sig: string;
+  webhook_id?: string;
+  webhook_event: {
+    id: string;
+    create_time: string;
+    resource_type: string;
+    event_type: string;
+    summary: string;
+    resource: {
+      id: string;
+      create_time: string;
+      update_time: string;
+      state: string;
+      amount: {
+        total: string;
+        currency: string;
+        details: {
+          subtotal: string;
+        };
+      };
+      parent_payment: string;
+      valid_until: string;
+      links: {
+        href: string;
+        rel: string;
+        method: string;
+      }[];
+    };
+  };
+}
 class PaypalService {
   // Function to obtain the PayPal access token from an endpoint
   async getAccessToken(clientId: string, secret: string): Promise<string> {
@@ -132,6 +170,47 @@ class PaypalService {
 
     return response.data;
   }
+ 
+  //paypal webhook function
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async paypalWebhook(headers: any, body: any): Promise<any> {
+    const accessToken = await this.getAccessToken(
+      process.env.PAYPAL_CLIENT_ID,
+      process.env.PAYPAL_SECRET
+    );
+
+    const transmission_id = headers["paypal-transmission-id"];
+    const transmission_sig = headers["paypal-transmission-sig"];
+    const transmission_time = headers["paypal-transmission-time"];
+    const auth_algo =  headers["auth_algo"]; 
+    const cert_url = headers["cert_url"];
+    const webhook_id = webhookId
+
+    const payload: WebhookBody = {
+      transmission_id,
+      transmission_time,
+      cert_url,
+      auth_algo,
+      transmission_sig,
+      webhook_id,
+      webhook_event: JSON.parse(body), // parse the JSON body
+    };
+
+    
+    const response = await axios.post(
+      "https://api-m.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  }
+
 }
 
 export default new PaypalService();

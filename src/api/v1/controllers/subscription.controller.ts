@@ -82,7 +82,7 @@ class SubscriptionController {
       status: "active",
       paidAt: new Date(),
       expiresAt: expirationDate,
-    // paypalSubscriptionId
+    // paypalPlanId
     // subscribedIdFromPaypal
     });
 
@@ -187,8 +187,8 @@ class SubscriptionController {
           payer_selected: "PAYPAL",
           payee_preferred: "IMMEDIATE_PAYMENT_REQUIRED",
         },
-        return_url: `${yourBaseURL}/returnUrl`,
-        cancel_url: `${yourBaseURL}/cancelUrl`,
+        return_url: `${yourBaseURL}/store/dashboard`,
+        cancel_url: `${yourBaseURL}/auth/select-plan`,
       },
       custom_id: business._id,
     };

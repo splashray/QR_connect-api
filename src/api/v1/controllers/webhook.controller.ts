@@ -1,116 +1,175 @@
-// import { Request, Response } from "express";
-// import { BadRequest, ResourceNotFound, ServerError } from "../../../errors/httpErrors";
-// import Business from "../../../db/models/business.model";
-// import SubscriptionPlan from "../../../db/models/subscriptionPlan.model";
-// import Subscription from "../../../db/models/subscription.model";
-// import SubscriptionLog from "../../../db/models/subscriptionLog.model";
-// // import { v4 as uuidv4 } from "uuid";
-// // import PaypalService from "./paypalService"; // Adjust the import path as needed
+import { Request, Response } from "express";
+import { BadRequest, ResourceNotFound } from "../../../errors/httpErrors";
+import Business from "../../../db/models/business.model";
+import SubscriptionPlan, { ISubscriptionPlan } from "../../../db/models/subscriptionPlan.model";
+import Subscription from "../../../db/models/subscription.model";
+import SubscriptionLog from "../../../db/models/subscriptionLog.model";
+import PaypalService from "../../../services/payment.service";
+import dotenv from "dotenv";
+dotenv.config();
 
-// class WebhookController {
-//   async paypalWebhook(req: Request, res: Response) {
-//     const { event_type } = req.body;
+interface resourcePayload {
+    id: string,
+    custom_id: string
+    start_time: Date,
+    billing_info: {
+        next_billing_time: string
+    },
+    plan_id: string,
+}    
 
-//     // Check if the event_type matches the desired events
-//     if (event_type === "BILLING.SUBSCRIPTION.ACTIVATED" || event_type === "PAYMENT.SALE.COMPLETED") {
-//       try {
-//         // Handle the webhook event based on the event type
-//         if (event_type === "BILLING.SUBSCRIPTION.ACTIVATED") {
-//           await this.handleSubscriptionActivated(req.body); // Handle subscription activation
-//         } else if (event_type === "PAYMENT.SALE.COMPLETED") {
-//           await this.handlePaymentCompleted(req.body); // Handle payment completed
-//         }
+class WebhookController {
+  constructor() {
+    // Bind the methods to the current instance
+    this.paypalWebhook = this.paypalWebhook.bind(this);
+    this.handleSubscriptionActivated = this.handleSubscriptionActivated.bind(this);
+    this.handlePaymentCompleted = this.handlePaymentCompleted.bind(this);
+  }
+  //function to verify Webhook Signature     
+  async paypalWebhook(req: Request, res: Response) {
+    const headers = req.headers;
+    const body = JSON.stringify(req.body);
+   
+    // Call the createSubscription function from PaypalService
+    const result = await PaypalService.paypalWebhook(headers, body);
+    // Verify the webhook signature
+    if (result.verification_status === "SUCCESS") {
+      console.log("valid signature", result)
+      // Signature is valid, process the webhook event
+      const { event_type, resource_type,  resource } = JSON.parse(body);
+    
+      // Handle the webhook event based on the event type
+      if (event_type === "BILLING.SUBSCRIPTION.ACTIVATED") {   
+        console.log("type: BILLING.SUBSCRIPTION.ACTIVATED")
+        await this.handleSubscriptionActivated(resource, resource_type); 
+      } else if (event_type === "PAYMENT.SALE.COMPLETED") {
+        console.log("type: PAYMENT.SALE.COMPLETED")
+        await this.handlePaymentCompleted(JSON.parse(body)); 
+      }
+  
+      // Handle response since event if is handled
+      console.log("Handle response")
+      return res.sendStatus(200);
+    } else {
+      // Invalid signature, reject the webhook
+      console.log("Invalid signature", result)
+      return res.sendStatus(403); // 403 Forbidden
+    }
 
-//         return res.ok({ message: "Webhook event processed." });
-//       } catch (error) {
-//         console.error("Error handling PayPal webhook event:", error);
-//         throw new ServerError("Error handling PayPal webhook event", "UNEXPECTED_ERROR");
-//       }
-//     }
+  }
 
-//     // Handle other webhook events or return a response if not handled
-//     return res.ok({ message: "Webhook event processed." });
-//   }
+  // Handle subscription activation event
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async handleSubscriptionActivated(resource_type: string, resource: resourcePayload) {
+    if (resource_type === "subscription") {
+      console.log("resource_type: subscription")
 
-//   // Handle subscription activation event
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   async handleSubscriptionActivated(data: any) {
-//     // Extract necessary information from the webhook data
-//     const { resource, resource_type } = data;
+      const businessId = resource.custom_id; 
+      const PlanId = resource.plan_id; 
 
-//     if (resource_type === "subscription") {
-//       // Get the business ID and subscription plan ID from your data source (e.g., MongoDB)
-//       const businessId = resource.businessId; // Adjust this based on your data structure
-//       const subscriptionPlanId = resource.subscriptionPlanId; // Adjust this based on your data structure
+      // Check if the business exists
+      const business = await Business.findById(businessId);
+      if (!business) {
+        throw new ResourceNotFound(`Business with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
+      }
 
-//       // Check if the business exists
-//       const business = await Business.findById(businessId);
-//       if (!business) {
-//         throw new ResourceNotFound(`Business with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
-//       }
+      // Retrieve the selected subscription plan from MongoDB
+      const subscriptionPlan = await SubscriptionPlan.findOne({paypalPlanId: PlanId});
+      if (!subscriptionPlan) {
+        throw new ResourceNotFound("Subscription Plan not found", "RESOURCE_NOT_FOUND");
+      }
 
-//       // Retrieve the selected subscription plan from MongoDB
-//       const subscriptionPlan = await SubscriptionPlan.findById(subscriptionPlanId);
-//       if (!subscriptionPlan) {
-//         throw new ResourceNotFound("Subscription Plan not found", "RESOURCE_NOT_FOUND");
-//       }
+      // Create or update the subscription based on the webhook data
+      await this.createOrUpdateSubscription(businessId, subscriptionPlan, resource);
+    }
+  }
 
-//       // Create or update the subscription based on the webhook data
-//       await this.createOrUpdateSubscription(businessId, subscriptionPlan);
-//     }
-//   }
+  // Create or update the subscription
+  async createOrUpdateSubscription(businessId: string, subscriptionPlan: ISubscriptionPlan, resource: resourcePayload) {
 
-//   // Handle payment completed event
-//   //   async handlePaymentCompleted(data: any) {
-//   //     // Extract necessary information from the webhook data
-//   //     // Add your logic to handle payment completed events here
-//   //     // You can access the payment details from 'data' object
-//   //   }
+    // Check if the user already has an active subscription
+    const existingSubscription = await Subscription.findOne({businessId});
+    if (existingSubscription) {
+      console.log("existingSubscription")
 
-//   // Create or update the subscription
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   async createOrUpdateSubscription(businessId: string, subscriptionPlan: any) {
-//     // Check if the user already has an active subscription
-//     const existingSubscription = await Subscription.findOne({
-//       businessId,
-//       status: "active",
-//     });
+      // Update the existing subscription if needed
+      existingSubscription.subscriptionPlanId = subscriptionPlan._id;
+      existingSubscription.subscriptionPlanName = subscriptionPlan.name;
+      existingSubscription.status = "active";
+      existingSubscription.paidAt =  new Date(resource.start_time);
+      existingSubscription.paypalPlanId = resource.plan_id;
+      existingSubscription.subscribedIdFromPaypal =  resource.id;
 
-//     if (existingSubscription) {
-//       // Update the existing subscription if needed
-//       // You can add logic here to update subscription details if necessary
-//       // For example, updating the subscription end date or plan
-//     } else {
-//       // Create a new subscription
-//       const newSubscription = new Subscription({
-//         businessId,
-//         subscriptionPlanId: subscriptionPlan._id,
-//         // Add other subscription details as needed
-//         status: "active",
-//         expiresAt: new Date(), // Set the expiration date as needed
-//       });
+      // Save the updated subscription
+      const updatedSubscription = await existingSubscription.save();
+  
+      if (!updatedSubscription) {
+        throw new BadRequest("Failed to update the subscription", "INVALID_REQUEST_PARAMETERS");
+      }
+        
+      // Create a subscription log entry for the update
+      const updateSubscriptionLog = new SubscriptionLog({
+        businessId,
+        subscriptionPlanId: subscriptionPlan._id,
+        reference: resource.id,
+        amountPaid: subscriptionPlan.price,
+        startDate: new Date(resource.start_time),
+        endDate: new Date(resource.billing_info.next_billing_time),
+        comment: `${subscriptionPlan.name} Subscription created`
+      });
+  
+      const savedUpdateSubscriptionLog = await updateSubscriptionLog.save();
+  
+      if (!savedUpdateSubscriptionLog) {
+        throw new BadRequest("Failed to create a subscription log entry for the update", "INVALID_REQUEST_PARAMETERS");
+      }
+      
+    } else {
+      console.log("No existingSubscription")
 
-//       const savedSubscription = await newSubscription.save();
+      // Create a new subscription and subscription log
+      const newSubscription = new Subscription({
+        businessId,
+        subscriptionPlanId: subscriptionPlan._id,
+        subscriptionPlanName: subscriptionPlan.name,
+        status: "active",
+        paidAt: new Date(resource.start_time),
+        expiresAt: new Date(resource.billing_info.next_billing_time),
+        paypalPlanId: resource.plan_id,
+        subscribedIdFromPaypal: resource.id
+      });
 
-//       if (!savedSubscription) {
-//         throw new BadRequest("Failed to create a new subscription", "INVALID_REQUEST_PARAMETERS");
-//       }
+      const savedSubscription = await newSubscription.save();
 
-//       // Create a subscription log entry
-//       const newSubscriptionLog = new SubscriptionLog({
-//         businessId,
-//         subscriptionPlanId: subscriptionPlan._id,
-//         // Add other subscription log details as needed
-//         comment: "Subscription created",
-//       });
+      if (!savedSubscription) {
+        throw new BadRequest("Failed to create a new subscription", "INVALID_REQUEST_PARAMETERS");
+      }
 
-//       const savedSubscriptionLog = await newSubscriptionLog.save();
+      // Create a subscription log entry
+      const newSubscriptionLog = new SubscriptionLog({
+        businessId,
+        subscriptionPlanId: subscriptionPlan._id,
+        reference: resource.id,
+        amountPaid: subscriptionPlan.price,
+        startDate: new Date(resource.start_time),
+        endDate: new Date(resource.billing_info.next_billing_time),
+        comment: `${subscriptionPlan.name} Subscription created`
+      });
 
-//       if (!savedSubscriptionLog) {
-//         throw new BadRequest("Failed to create a subscription log entry", "INVALID_REQUEST_PARAMETERS");
-//       }
-//     }
-//   }
-// }
+      const savedSubscriptionLog = await newSubscriptionLog.save();
 
-// export default new WebhookController();
+      if (!savedSubscriptionLog) {
+        throw new BadRequest("Failed to create a subscription log entry", "INVALID_REQUEST_PARAMETERS");
+      }
+    }
+  }
+  
+  
+  // Handle payment completed event
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async handlePaymentCompleted(data: any) {
+    console.log(data)
+  }
+}
+
+export default new WebhookController();

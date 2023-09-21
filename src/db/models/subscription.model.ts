@@ -6,7 +6,7 @@ export interface ISubscription extends Document {
   businessId: mongoose.Types.ObjectId;
   subscriptionPlanId: mongoose.Types.ObjectId;
   subscriptionPlanName: string;
-  paypalSubscriptionId: string;
+  paypalPlanId: string;
   subscribedIdFromPaypal: string;
   paidAt: Date;
   expiresAt: Date;
@@ -29,7 +29,7 @@ const subscriptionSchema = new Schema<ISubscription>(
       type: String,
       required: true,
     },
-    paypalSubscriptionId: {
+    paypalPlanId: {
       type: String,
     },
     subscribedIdFromPaypal: {
