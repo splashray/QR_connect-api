@@ -179,11 +179,11 @@ class PaypalService {
       process.env.PAYPAL_SECRET
     );
 
-    const transmission_id = headers["paypal-transmission-id"];
     const transmission_sig = headers["paypal-transmission-sig"];
+    const transmission_id = headers["paypal-transmission-id"];
     const transmission_time = headers["paypal-transmission-time"];
-    const auth_algo =  headers["auth_algo"]; 
-    const cert_url = headers["cert_url"];
+    const cert_url = headers["paypal-cert-url"];
+    const auth_algo =  headers["paypal-auth-algo"]; 
     const webhook_id = webhookId
 
     const payload: WebhookBody = {
