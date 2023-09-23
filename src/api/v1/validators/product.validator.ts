@@ -68,3 +68,18 @@ export const updateProductValidator = (payload: any) => {
 
   return validateRequestBody(schema, payload);
 };
+
+
+// Define the validation schema for updating a product
+export const deleteMediaProductValidator = (payload: any) => {
+  const schema = z.object({
+    productId: z.string({
+      required_error: "Product id is required.",
+    }),
+    imageId: z.string({
+      required_error: "image id to be deleted is required.",
+    })
+  });
+
+  return validateRequestBody(schema, payload);
+};

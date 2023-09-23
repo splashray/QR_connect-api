@@ -218,15 +218,52 @@ class SubscriptionController {
   // Cancel subscription
   async cancelSubscription(req: Request, res: Response) {
     const businessId = req.loggedInAccount._id;
-    res.ok(businessId);
-    
+    const { reason } = req.query;
+    // Check if reason is missing or an empty string
+    if (!reason || (typeof reason === "string" && reason.trim() === "")) {
+      throw new ResourceNotFound("You don't have a valid reason to cancel the plan.", "RESOURCE_NOT_FOUND");
+    }
+
+    const subscription = await Subscription.findOne({businessId: businessId});
+    if (!subscription) {
+      throw new ResourceNotFound(`Subscription with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
+    }
+
+    const id = subscription.subscribedIdFromPaypal;
+    // Call the cancelSubscription function from PaypalService
+    const result = await PaypalService.cancelSubscription(reason.toString(), id);
+    if (result.status !== 204) {
+      throw new ServerError("Initiate cancellation failed", "THIRD_PARTY_API_FAILURE");
+    }
+      
+    res.ok("Your Subscription has been cancelled");
   }
 
-  // Activate subscription
-  async activateSubscription(req: Request, res: Response) {
-    const businessId = req.loggedInAccount._id;
-    res.ok(businessId);
-  }
+  // // Activate subscription
+  // async activateSubscription(req: Request, res: Response) {
+  //   const businessId = req.loggedInAccount._id;
+  //   const { reason } = req.query;
+  //   // Check if reason is missing or an empty string
+  //   if (!reason || (typeof reason === "string" && reason.trim() === "")) {
+  //     throw new ResourceNotFound("You don't have a valid reason to cancel the plan.", "RESOURCE_NOT_FOUND");
+  //   }
+
+  //   const subscription = await Subscription.findOne({businessId: businessId});
+  //   if (!subscription) {
+  //     throw new ResourceNotFound(`Subscription with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
+  //   }
+  //   console.log(subscription);
+
+  //   const id = subscription.subscribedIdFromPaypal;
+  //   // Call the activateSubscription function from PaypalService
+  //   const result = await PaypalService.activateSubscription(reason.toString(), id);
+  //   console.log("RESULT ======" ,result)
+  //   if (result.status !== 204) {
+  //     throw new ServerError("Initiate activation failed", "THIRD_PARTY_API_FAILURE");
+  //   }
+      
+  //   res.ok("Your Subscription has been reactivated");
+  // }
 
   // Get subscription by businessId
   async getSubscriptionByBusinessId(req: Request, res: Response) {
@@ -234,11 +271,19 @@ class SubscriptionController {
     if (!businessId) {
       throw new ResourceNotFound("business Id is missing.", "RESOURCE_NOT_FOUND");
     }
-    const subscription = await Subscription.findOne({businessId: businessId});
+    const subscription = await Subscription.findOne({ businessId });
     if (!subscription) {
       throw new ResourceNotFound(`Subscription with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
     }
-    res.ok(subscription);
+    const subscriptionlog = await SubscriptionLog.find({ businessId });
+
+    // Fetch the latest SubscriptionLog for the Subscription
+    const currentSubscriptionLog = await SubscriptionLog.findOne({ businessId })
+      .sort({ createdAt: -1 }) 
+      .limit(1);
+
+
+    res.ok({subscription, currentSubscriptionLog, subscriptionlog});
   }
 
   // Get all subscriptions by admin

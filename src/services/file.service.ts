@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import fs from "fs/promises";
 import url from "url";
-
+import sharp from "sharp"; 
 // import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 
@@ -88,17 +88,15 @@ async function deleteImagesFromAWS(imageUrls: string[]) {
 //   return await getSignedUrl(s3Client, new GetObjectCommand(bucketParams));
 // }
 
-// async function reduceImageSize(filePath: string): Promise<string> {
-//   const resizedImagePath = `${filePath}-resized`;
+async function reduceImageSize(filePath: string): Promise<string> {
+  const resizedImagePath = `${filePath}-resized`;
 
-//   await sharp(filePath)
-//     .resize({ width: 800, height: 600 })
-//     .toFile(resizedImagePath);
+  await sharp(filePath)
+    .resize({ width: 800, height: 600 })
+    .toFile(resizedImagePath);
 
-//   await fs.unlink(filePath);
-
-//   return resizedImagePath;
-// }
+  return resizedImagePath;
+}
 
 // async function resizeAndAddWatermark(
 //   imagePath: string,
@@ -131,8 +129,11 @@ async function deleteImagesFromAWS(imageUrls: string[]) {
 export {
   uploadPicture,
   deleteImage,
-  deleteImagesFromAWS
+  deleteImagesFromAWS,
+  reduceImageSize,
 //   getImageUrl,
-//   reduceImageSize,
 //   resizeAndAddWatermark,
 };
+
+
+// "https://ravebooking.s3.amazonaws.com/Product-images/0ec0213c-0efd-4f67-949c-08fa4188360d.jpg","https://ravebooking.s3.amazonaws.com/Product-images/6c1b4be1-4d5b-46da-aedc-54a413427025.jpg","https://ravebooking.s3.amazonaws.com/Product-images/eec3fd22-e40c-41ce-be25-ff32bd325419.jpg"

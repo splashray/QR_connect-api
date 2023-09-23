@@ -16,7 +16,7 @@ import {
 import mongoose from "mongoose";
 import { promises as fsPromises } from "fs";
 import path from "path";
-import { uploadPicture, deleteImage, deleteImagesFromAWS } from "../../../services/file.service";
+import { uploadPicture, deleteImage, deleteImagesFromAWS, reduceImageSize } from "../../../services/file.service";
 
 // import  redisClient from "../../../config/redis.config";
 // const PRODUCT_CACHE_EXPIRATION = 60 * 60 * 24 * 1; // 1 day
@@ -358,13 +358,19 @@ class ProductController {
 
     for (const uploadedFile of uploadedImages) {
       const  productPictureExtension = path.extname(uploadedFile.originalname);
+      // Resize the image before uploading
+      const resizedImagePath = await reduceImageSize(uploadedFile.path);
+
       const productPictureKey = await uploadPicture(
-        uploadedFile.path,
+        resizedImagePath,
         "Product-images",
         productPictureExtension
       );
-      await fsPromises.unlink(uploadedFile.path);
+ 
+      // Delete the resized image from the server
+      await fsPromises.unlink(resizedImagePath);
 
+      // const key = `https://ravebooking.s3.amazonaws.com/${productPictureKey}`;
       const key = `https://qrconnect-data.s3.amazonaws.com/${productPictureKey}`;
       uploadedUrls.push(key);
     }
@@ -377,54 +383,40 @@ class ProductController {
 
   // Delete single media
   async deleteSingleMedia(req: Request, res: Response){
-    try{
-      const {imageId, productId} = req.query;
-      console.log(imageId, productId);
-      if (!mongoose.Types.ObjectId.isValid(productId as string)) {
-        throw new BadRequest("productId is not a valid ObjectId", "INVALID_REQUEST_PARAMETERS");
-      }
-      if (!productId || !imageId) {
-        throw new ResourceNotFound("Query parameters are missing", "RESOURCE_NOT_FOUND");
-      }
-    
-      // Find the product by ID
-      const product = await Product.findById(productId);
-      console.log(product)
-      if (!product) {
-        throw new BadRequest(`Product with ID ${productId} not found.`, "INVALID_REQUEST_PARAMETERS");
-      }
-  
-      // Find the index of the mediaImage with the given imageId
-      const imageIndex = product.productImages.findIndex((img: string) => img === imageId);
-      console.log(imageIndex)
-      if (imageIndex === -1) {
-        throw new BadRequest(`Image with ${imageId} not found in product.`,"INVALID_REQUEST_PARAMETERS");
-      }
-  
-      // Get the image URL (or key) to delete from AWS
-      const imageKey = product.productImages[imageIndex];
-      console.log(imageKey)
-      // Delete the image from AWS (replace with your actual deletion logic)
-      await deleteImage(imageKey);
-  
-      // Remove the mediaImage from the product's productImages array
-      product.productImages.splice(imageIndex, 1);
-      console.log(product)
-      // Update the product record in the database
-      const updateProduct = await product.save();
-
-      if (!updateProduct) {
-        throw new BadRequest("Product update failed.", "INVALID_REQUEST_PARAMETERS");
-      }
-  
-      return res.ok({
-        product: updateProduct,
-        message: `Image with ${imageId} deleted successfully`,
-      });
-
-    }catch(e){
-      console.log("error", e)
+    const { error, data } = validators.deleteMediaProductValidator(req.body);
+    if (error) throw new BadRequest(error.message, error.code);
+      
+    const {imageId, productId} = data;
+    // Find the product by ID
+    const product = await Product.findById(productId);
+    if (!product) {
+      throw new BadRequest(`Product with ID ${productId} not found.`, "INVALID_REQUEST_PARAMETERS");
     }
+  
+    // Find the index of the mediaImage with the given imageId
+    const imageIndex = product.productImages.findIndex((img: string) => img === imageId);
+    if (imageIndex === -1) {
+      throw new BadRequest(`Image with ${imageId} not found in product.`,"INVALID_REQUEST_PARAMETERS");
+    }
+  
+    // Get the image URL (or key) to delete from AWS
+    const imageKey = product.productImages[imageIndex];
+    // Delete the image from AWS (replace with your actual deletion logic)
+    await deleteImage(imageKey);
+  
+    // Remove the mediaImage from the product's productImages array
+    product.productImages.splice(imageIndex, 1);
+    // Update the product record in the database
+    const updateProduct = await product.save();
+
+    if (!updateProduct) {
+      throw new BadRequest("Product update failed.", "INVALID_REQUEST_PARAMETERS");
+    }
+  
+    return res.ok({
+      product: updateProduct,
+      message: `Image with ${imageId} deleted successfully`,
+    });
     
   }
 
@@ -443,8 +435,11 @@ class ProductController {
       throw new ResourceNotFound(`Product with ID ${productId} not found.`, "RESOURCE_NOT_FOUND");
     }
 
+    // Check if the product has images
+    if (product.productImages && product.productImages.length > 0) {
     // Delete all images associated with the product from AWS
-    await deleteImagesFromAWS(product.productImages);
+      await deleteImagesFromAWS(product.productImages);
+    }
 
     // Delete the product from the database
     await Product.findByIdAndDelete(productId);
@@ -463,7 +458,7 @@ export default new ProductController();
 //Todo: implement redis on the product search.
 
 // Define a function to generate a unique cache key based on the query parameters
-//  function generateCacheKey(query: any, businessId: string): string {
+// function generateCacheKey(query: any, businessId: string): string {
 //   const cacheKeyParts = [businessId];
 //   if (query.productName) {
 //     cacheKeyParts.push(query.productName);
@@ -471,7 +466,7 @@ export default new ProductController();
 //   if (query.productCategory) {
 //     cacheKeyParts.push(query.productCategory);
 //   }
-//   return cacheKeyParts.join('_');
+//   return cacheKeyParts.join("_");
 // }
 
 // async function getCachedSearchResults(cacheKey: string): Promise<any | null> {

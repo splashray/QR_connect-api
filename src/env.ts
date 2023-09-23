@@ -6,7 +6,7 @@ export const envSchema = z.object({
   BASE_URL: z.string(),
   PAYPAL_CLIENT_ID: z.string(),
   PAYPAL_SECRET: z.string(),
-
+  PAYPAL_WEBHOOK_ID: z.string(),
 
   REDIS_URL: z.string(),
   REDIS_HOST: z.string(),

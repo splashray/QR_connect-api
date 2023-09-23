@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
-import { BadRequest, ResourceNotFound } from "../../../errors/httpErrors";
-import Business from "../../../db/models/business.model";
+import Business, { IBusiness } from "../../../db/models/business.model";
 import SubscriptionPlan, { ISubscriptionPlan } from "../../../db/models/subscriptionPlan.model";
 import Subscription from "../../../db/models/subscription.model";
 import SubscriptionLog from "../../../db/models/subscriptionLog.model";
@@ -23,6 +22,7 @@ class WebhookController {
     // Bind the methods to the current instance
     this.paypalWebhook = this.paypalWebhook.bind(this);
     this.handleSubscriptionActivated = this.handleSubscriptionActivated.bind(this);
+    this.handleSubscriptionCancelled = this.handleSubscriptionCancelled.bind(this);
     this.handlePaymentCompleted = this.handlePaymentCompleted.bind(this);
   }
   //function to verify Webhook Signature     
@@ -38,19 +38,26 @@ class WebhookController {
       // Signature is valid, process the webhook event
       const { event_type, resource_type,  resource } = JSON.parse(body);
     
+      console.log( event_type, resource_type,  resource );
+      
       // Handle the webhook event based on the event type
       if (event_type === "BILLING.SUBSCRIPTION.ACTIVATED") {   
         console.log("type: BILLING.SUBSCRIPTION.ACTIVATED")
-        await this.handleSubscriptionActivated(resource, resource_type); 
+        await this.handleSubscriptionActivated(resource, resource_type, res); 
+      } else if (event_type === "BILLING.SUBSCRIPTION.CANCELLED") {
+        console.log("type: BILLING.SUBSCRIPTION.CANCELLED")
+        await this.handleSubscriptionCancelled(resource, resource_type, res); 
       } else if (event_type === "PAYMENT.SALE.COMPLETED") {
         console.log("type: PAYMENT.SALE.COMPLETED")
         await this.handlePaymentCompleted(JSON.parse(body)); 
+      }  else{
+        // Handle response since event is handled
+        console.log("Handle response")
+        return res.sendStatus(200);
       }
   
-      // Handle response since event if is handled
-      console.log("Handle response")
-      return res.sendStatus(200);
     } else {
+      console.log(result);
       // Invalid signature, reject the webhook
       console.log("Invalid signature", result)
       return res.sendStatus(403); // 403 Forbidden
@@ -59,34 +66,40 @@ class WebhookController {
   }
 
   // Handle subscription activation event
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async handleSubscriptionActivated(resource_type: string, resource: resourcePayload) {
+  async handleSubscriptionActivated(resource: resourcePayload, resource_type: string, res: Response) {
     if (resource_type === "subscription") {
       console.log("resource_type: subscription")
 
       const businessId = resource.custom_id; 
       const PlanId = resource.plan_id; 
 
+      // Check if the existingLog exists
+      const existingLog = await SubscriptionLog.findOne({reference: resource.id});
+      if (existingLog) {
+        return res.sendStatus(401); // 401 badrequest
+      }
+
       // Check if the business exists
       const business = await Business.findById(businessId);
       if (!business) {
-        throw new ResourceNotFound(`Business with ID ${businessId} not found.`, "RESOURCE_NOT_FOUND");
+        return res.sendStatus(404); // 404 not found
       }
 
       // Retrieve the selected subscription plan from MongoDB
       const subscriptionPlan = await SubscriptionPlan.findOne({paypalPlanId: PlanId});
       if (!subscriptionPlan) {
-        throw new ResourceNotFound("Subscription Plan not found", "RESOURCE_NOT_FOUND");
+        return res.sendStatus(404); // 404 not found
       }
 
       // Create or update the subscription based on the webhook data
-      await this.createOrUpdateSubscription(businessId, subscriptionPlan, resource);
+      await this.createOrUpdateSubscription(business, subscriptionPlan, resource, res);
     }
   }
 
   // Create or update the subscription
-  async createOrUpdateSubscription(businessId: string, subscriptionPlan: ISubscriptionPlan, resource: resourcePayload) {
+  async createOrUpdateSubscription(business: IBusiness, subscriptionPlan: ISubscriptionPlan, resource: resourcePayload, res:Response) {
 
+    const businessId = business._id
     // Check if the user already has an active subscription
     const existingSubscription = await Subscription.findOne({businessId});
     if (existingSubscription) {
@@ -97,14 +110,13 @@ class WebhookController {
       existingSubscription.subscriptionPlanName = subscriptionPlan.name;
       existingSubscription.status = "active";
       existingSubscription.paidAt =  new Date(resource.start_time);
+      existingSubscription.expiresAt =   new Date(resource.billing_info.next_billing_time),
       existingSubscription.paypalPlanId = resource.plan_id;
       existingSubscription.subscribedIdFromPaypal =  resource.id;
-
       // Save the updated subscription
       const updatedSubscription = await existingSubscription.save();
-  
       if (!updatedSubscription) {
-        throw new BadRequest("Failed to update the subscription", "INVALID_REQUEST_PARAMETERS");
+        return res.sendStatus(401); // 401 badrequest
       }
         
       // Create a subscription log entry for the update
@@ -117,13 +129,20 @@ class WebhookController {
         endDate: new Date(resource.billing_info.next_billing_time),
         comment: `${subscriptionPlan.name} Subscription created`
       });
-  
       const savedUpdateSubscriptionLog = await updateSubscriptionLog.save();
-  
       if (!savedUpdateSubscriptionLog) {
-        throw new BadRequest("Failed to create a subscription log entry for the update", "INVALID_REQUEST_PARAMETERS");
+        return res.sendStatus(401); // 401 badrequest
       }
-      
+
+      // update business sub status
+      business.subscriptionStatus = "Subscribed";
+      const savedBusiness = await business.save();
+      if (!savedBusiness) {
+        return res.sendStatus(401); // 401 badrequest
+      }
+      // Handle response since event is handled
+      console.log("Handle response")
+      return res.sendStatus(200);
     } else {
       console.log("No existingSubscription")
 
@@ -138,11 +157,9 @@ class WebhookController {
         paypalPlanId: resource.plan_id,
         subscribedIdFromPaypal: resource.id
       });
-
       const savedSubscription = await newSubscription.save();
-
       if (!savedSubscription) {
-        throw new BadRequest("Failed to create a new subscription", "INVALID_REQUEST_PARAMETERS");
+        return res.sendStatus(401); // 401 badrequest
       }
 
       // Create a subscription log entry
@@ -155,15 +172,61 @@ class WebhookController {
         endDate: new Date(resource.billing_info.next_billing_time),
         comment: `${subscriptionPlan.name} Subscription created`
       });
-
       const savedSubscriptionLog = await newSubscriptionLog.save();
-
       if (!savedSubscriptionLog) {
-        throw new BadRequest("Failed to create a subscription log entry", "INVALID_REQUEST_PARAMETERS");
+        return res.sendStatus(401); // 401 badrequest
       }
+
+      // update business sub status
+      business.subscriptionStatus = "Subscribed";
+      const savedBusiness = await business.save();
+      if (!savedBusiness) {
+        return res.sendStatus(401); // 401 badrequest
+      }
+      // Handle response since event is handled
+      console.log("Handle response")
+      return res.sendStatus(200);
     }
   }
   
+  // Cancel the subscription
+  async handleSubscriptionCancelled(resource: resourcePayload, resource_type: string, res: Response) {
+    if (resource_type === "subscription") {
+      console.log("resource_type: subscription")
+
+      const businessId = resource.custom_id; 
+      // Check if the business exists
+      const business = await Business.findById(businessId);
+      if (!business) {
+        return res.sendStatus(404); // 404 not found
+      }
+      // update business sub status
+      business.subscriptionStatus = "Deactivated";
+      const savedBusiness = await business.save();
+      if (!savedBusiness) {
+        return res.sendStatus(401); // 401 badrequest
+      }
+
+      // update business sub in the subscription status
+      const subscription = await Subscription.findOne({
+        subscribedIdFromPaypal: resource.id, businessId: businessId
+      });
+      if (!subscription) {
+        return res.sendStatus(404); // 404 not found
+      }
+      // update subscription sub status subscription
+      subscription.status = "expired";
+      const savedSub = await subscription.save();
+      if (!savedSub) {
+        return res.sendStatus(401); // 401 badrequest
+      }
+
+      // Handle response since event is handled
+      console.log("Handle response")
+      return res.sendStatus(200);
+    }
+  }
+
   
   // Handle payment completed event
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
