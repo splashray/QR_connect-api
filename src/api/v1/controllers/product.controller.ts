@@ -18,8 +18,8 @@ import { promises as fsPromises } from "fs";
 import path from "path";
 import { uploadPicture, deleteImage, deleteImagesFromAWS, reduceImageSize } from "../../../services/file.service";
 
-// import  redisClient from "../../../config/redis.config";
-// const PRODUCT_CACHE_EXPIRATION = 60 * 60 * 24 * 1; // 1 day
+import  {redisClient} from "../../../config/redis.config";
+const PRODUCT_CACHE_EXPIRATION =  3600 // Cache for 1 hour
 
 type QueryParams = {
   startDate?: Date; 
@@ -126,7 +126,6 @@ class ProductController {
   
   }
   
-
   // Get all products - General
   async getGeneralBusinessProducts(req: Request, res: Response) {
     const {businessSlug} = req.params;
@@ -163,59 +162,131 @@ class ProductController {
   }
 
   // Search products - General
-  async searchProducts(req: Request, res: Response) {
+  async searchProductsByCategory(req: Request, res: Response) {
     const { businessSlug } = req.params;
     if (!businessSlug) {
       throw new ResourceNotFound("Wrong store name... The store you are looking for doesn't exist.", "RESOURCE_NOT_FOUND");
     }
-  
+
     const business = await Business.findOne({ businessSlug });
-  
+
     if (!business) {
       throw new ResourceNotFound(
         `No products have been provided in the '${businessSlug}' store yet.`,
         "RESOURCE_NOT_FOUND"
       );
     }
-  
+
     // Get the businessId of the found business
     const businessId = business._id;
-  
+
+    // Get the query parameters and cast them to strings
+    const productCategory: string | undefined = String(req.query.productCategory);
+
+    // Define the base cache key based on the businessId
+    const baseCacheKey = `product_search_${businessId}`;
+
+    if (productCategory) {
+    // Search by productCategory
+      const productCategoryCacheKey = `${baseCacheKey}_productCategory_${productCategory}`;
+      const cachedProductCategoryResults = await redisClient.get(productCategoryCacheKey);
+
+      if (cachedProductCategoryResults) {
+      // If results are cached, return them directly
+        const parsedResults = JSON.parse(cachedProductCategoryResults);
+        return res.ok({ searchedProducts: parsedResults, totalSearchedProducts: parsedResults.length });
+      }
+
+      // If results are not cached, perform the search query for productCategory
+      const productCategorySearchCriteria = {
+        businessId, // Filter by the specific businessId
+        productCategory: { $regex: new RegExp(productCategory, "i") },
+      };
+
+      const searchedProducts = await Product.find(productCategorySearchCriteria);
+
+      // Cache the search results for productCategory with an expiration time (e.g., 1 hour)
+      await redisClient.set(productCategoryCacheKey, JSON.stringify(searchedProducts), {
+        EX: PRODUCT_CACHE_EXPIRATION,
+        NX: true,
+      });
+
+      const totalSearchedProducts = searchedProducts.length;
+
+      if (totalSearchedProducts === 0) {
+        return res.ok({ message: "No products found matching the search criteria." });
+      }
+
+      return res.ok({ searchedProducts, totalSearchedProducts });
+    } else {
+    // If neither productName nor productCategory is provided, return an error message
+      return res.error(400, "Please provide a search query (productName or productCategory).", "INVALID_REQUEST_PARAMETERS");
+    }
+  }
+
+  async searchProductsByProductName(req: Request, res: Response) {
+    const { businessSlug } = req.params;
+    if (!businessSlug) {
+      throw new ResourceNotFound("Wrong store name... The store you are looking for doesn't exist.", "RESOURCE_NOT_FOUND");
+    }
+
+    const business = await Business.findOne({ businessSlug });
+
+    if (!business) {
+      throw new ResourceNotFound(
+        `No products have been provided in the '${businessSlug}' store yet.`,
+        "RESOURCE_NOT_FOUND"
+      );
+    }
+
+    // Get the businessId of the found business
+    const businessId = business._id;
+
     // Get the query parameters and cast them to strings
     const productName: string | undefined = String(req.query.productName);
-    const productCategory: string | undefined = String(req.query.productCategory);
-  
-    // Define the search criteria
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const searchCriteria: any = {
-      businessId, // Filter by the specific businessId
-    };
-  
-    // Check if productName parameter is provided
+
+    // Define the base cache key based on the businessId
+    const baseCacheKey = `product_search_${businessId}`;
+
     if (productName) {
-      searchCriteria.productName = { $regex: new RegExp(productName, "i") }; // Case-insensitive regex search
+    // Search by productName
+      const productNameCacheKey = `${baseCacheKey}_productName_${productName}`;
+      const cachedProductNameResults = await redisClient.get(productNameCacheKey);
+
+      if (cachedProductNameResults) {
+      // If results are cached, return them directly
+        const parsedResults = JSON.parse(cachedProductNameResults);
+        return res.ok({ searchedProducts: parsedResults, totalSearchedProducts: parsedResults.length });
+      }
+
+      // If results are not cached, perform the search query for productName
+      const productNameSearchCriteria = {
+        businessId, // Filter by the specific businessId
+        productName: { $regex: new RegExp(productName, "i") },
+      };
+
+      const searchedProducts = await Product.find(productNameSearchCriteria);
+
+      // Cache the search results for productName with an expiration time (e.g., 1 hour)
+      await redisClient.set(productNameCacheKey, JSON.stringify(searchedProducts), {
+        EX: PRODUCT_CACHE_EXPIRATION,
+        NX: true,
+      });
+
+      const totalSearchedProducts = searchedProducts.length;
+
+      if (totalSearchedProducts === 0) {
+        return res.ok({ message: "No products found matching the search criteria." });
+      }
+
+      return res.ok({ searchedProducts, totalSearchedProducts });
+    } else {
+    // If neither productName nor productCategory is provided, return an error message
+      return res.error(400, "Please provide a search query (productName or productCategory).", "INVALID_REQUEST_PARAMETERS");
     }
-  
-    // Check if productCategory parameter is provided
-    if (productCategory) {
-      searchCriteria.productCategory = { $regex: new RegExp(productCategory, "i") }; // Case-insensitive regex search
-    }
-  
-    // Perform the search query
-    const searchedProducts = await Product.find(searchCriteria);
-  
-    // Calculate the total number of searched products
-    const totalSearchedProducts = searchedProducts.length;
-  
-    // Check if no products were found
-    if (totalSearchedProducts === 0) {
-      return res.ok({ message: "No products found matching the search criteria." });
-    }
-  
-    // Return the search results
-    res.ok({ searchedProducts, totalSearchedProducts });
   }
-    
+   
+
   // Get a product by ID
   async getProductById(req: Request, res: Response) {
     const { productId } = req.params;
@@ -450,105 +521,3 @@ class ProductController {
 }
 
 export default new ProductController();
-
-
-
-
-
-//Todo: implement redis on the product search.
-
-// Define a function to generate a unique cache key based on the query parameters
-// function generateCacheKey(query: any, businessId: string): string {
-//   const cacheKeyParts = [businessId];
-//   if (query.productName) {
-//     cacheKeyParts.push(query.productName);
-//   }
-//   if (query.productCategory) {
-//     cacheKeyParts.push(query.productCategory);
-//   }
-//   return cacheKeyParts.join("_");
-// }
-
-// async function getCachedSearchResults(cacheKey: string): Promise<any | null> {
-//   return new Promise((resolve, reject) => {
-//     redisClient.get(cacheKey, (error: any, data: string) => {
-//       if (error) {
-//         reject(error);
-//       } else {
-//         resolve(data ? JSON.parse(data) : null);
-//       }
-//     }); 
-//   });
-// }
-
-// async function cacheSearchResults(cacheKey: string, results: any) {
-//   await redisClient.set(cacheKey, JSON.stringify(results), 'EX', PRODUCT_CACHE_EXPIRATION);
-// }
-
-// Your existing searchProducts controller
-// async searchProducts(req: Request, res: Response) {
-//   const { businessSlug } = req.params;
-//   if (!businessSlug) {
-//     throw new ResourceNotFound("Wrong store name... The store you are looking for doesn't exist.", "RESOURCE_NOT_FOUND");
-//   }
-
-//   const business = await Business.findOne({ businessSlug });
-
-//   if (!business) {
-//     throw new ResourceNotFound(
-//       `No products have been provided in the '${businessSlug}' store yet.`,
-//       "RESOURCE_NOT_FOUND"
-//     );
-//   }
-
-//   // Get the businessId of the found business
-//   const businessId = business._id;
-
-//   // Get the query parameters and cast them to strings
-//   const productName: string | undefined = String(req.query.productName);
-//   const productCategory: string | undefined = String(req.query.productCategory);
-
-//   // Define the search criteria
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   const searchCriteria: any = {
-//     businessId, // Filter by the specific businessId
-//   };
-
-//   // Check if productName parameter is provided
-//   if (productName) {
-//     searchCriteria.productName = { $regex: new RegExp(productName, "i") }; // Case-insensitive regex search
-//   }
-
-//   // Check if productCategory parameter is provided
-//   if (productCategory) {
-//     searchCriteria.productCategory = { $regex: new RegExp(productCategory, "i") }; // Case-insensitive regex search
-//   }
-
-//   // Generate a cache key based on the query and businessId
-//   const cacheKey = generateCacheKey(req.query, businessId);
-
-//   // Try to get cached search results
-//   const cachedResults = await getCachedSearchResults(cacheKey);
-
-//   if (cachedResults) {
-//     // If cached results are found, return them
-//     res.ok({ searchedProducts: cachedResults, totalSearchedProducts: cachedResults.length, cached: true });
-//   } else {
-//     // If no cached results are found, perform the search query
-//     const searchedProducts = await Product.find(searchCriteria);
-
-//     // Calculate the total number of searched products
-//     const totalSearchedProducts = searchedProducts.length;
-
-//     // Check if no products were found
-//     if (totalSearchedProducts === 0) {
-//       return res.ok({ message: "No products found matching the search criteria." });
-//     }
-
-//     // Cache the search results for future use
-//     await cacheSearchResults(cacheKey, searchedProducts);
-
-//     // Return the search results
-//     res.ok({ searchedProducts, totalSearchedProducts, cached: false });
-//   }
-// }

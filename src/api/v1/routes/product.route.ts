@@ -17,8 +17,11 @@ productRouter.get("/", auth({ accountType: ["admin"] }), productController.getPr
 // Get all products - Business
 productRouter.get("/business", auth({ accountType: ["business"] }), productController.getProductsByBusiness);
 
-// Get products by search- General
-productRouter.get("/search/:businessSlug",  productController.searchProducts);
+// Get products by search- General - category
+productRouter.get("/search/:businessSlug/category",  productController.searchProductsByCategory);
+
+// Get products by search- General - name
+productRouter.get("/search/:businessSlug/name",  productController.searchProductsByProductName);
 
 // Get all products - General
 productRouter.get("/store/:businessSlug", productController.getGeneralBusinessProducts);
