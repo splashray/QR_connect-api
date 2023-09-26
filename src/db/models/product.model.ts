@@ -10,7 +10,7 @@ export interface IProduct extends Document {
   productCategory: string;
   productAmountInStock: number;
   productPrice: number;
-  productKeyFeatures: string[];
+  productKeyFeatures: string;
   productSize: string[];
   productColors: string[];
   productKeySpecifications: string;
@@ -62,7 +62,7 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       required: true,
     },
     productKeyFeatures: {
-      type: [String],
+      type: String,
       required: true,
     },
     productSize: {

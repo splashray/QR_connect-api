@@ -29,7 +29,7 @@ export const createProductValidator = (payload: any) => {
     productPrice: z.number({
       required_error: "Product price is required.",
     }),
-    productKeyFeatures: z.array(z.string()),
+    productKeyFeatures: z.string().optional(),
     productSize: z.array(z.string()),
     productColors: z.array(z.string()),
     productKeySpecifications: z.string().optional(),
@@ -55,7 +55,7 @@ export const updateProductValidator = (payload: any) => {
     productAmountInStock: z.number().optional(),
     productCategory: z.string().optional(),
     productPrice: z.number().optional(),
-    productKeyFeatures: z.array(z.string()).optional(),
+    productKeyFeatures:  z.string().optional(),
     productSize: z.array(z.string()).optional(),
     productColors: z.array(z.string()).optional(),
     productKeySpecifications: z.string().optional(),
