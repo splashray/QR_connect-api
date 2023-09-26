@@ -13,7 +13,7 @@ export interface IProduct extends Document {
   productKeyFeatures: string[];
   productSize: string[];
   productColors: string[];
-  productKeySpecifications: string[];
+  productKeySpecifications: string;
   productImages: string[];
   productAdditionalInformation: string;
   productDiscountCode?: string;
@@ -74,7 +74,7 @@ const ProductSchema = new mongoose.Schema<IProduct>(
       required: true,
     },
     productKeySpecifications: {
-      type: [String],
+      type: String,
       required: true,
     },
     productImages: {

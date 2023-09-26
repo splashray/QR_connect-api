@@ -32,7 +32,7 @@ export const createProductValidator = (payload: any) => {
     productKeyFeatures: z.array(z.string()),
     productSize: z.array(z.string()),
     productColors: z.array(z.string()),
-    productKeySpecifications: z.array(z.string()),
+    productKeySpecifications: z.string().optional(),
     productImages: z.array(z.string()),
     productAdditionalInformation: z.string({
       required_error: "Product additional information is required.",
@@ -58,7 +58,7 @@ export const updateProductValidator = (payload: any) => {
     productKeyFeatures: z.array(z.string()).optional(),
     productSize: z.array(z.string()).optional(),
     productColors: z.array(z.string()).optional(),
-    productKeySpecifications: z.array(z.string()).optional(),
+    productKeySpecifications: z.string().optional(),
     productImages: z.array(z.string()).optional(),
     productAdditionalInformation: z.string().optional(),
     productDiscountCode: z.string().optional(),
