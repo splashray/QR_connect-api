@@ -442,7 +442,7 @@ class ProductController {
       await fsPromises.unlink(resizedImagePath);
 
       // const key = `https://ravebooking.s3.amazonaws.com/${productPictureKey}`;
-      const key = `https://qrconnect-data.s3.amazonaws.com/${productPictureKey}`;
+      const key = `https://qrconnect-files.s3.amazonaws.com/${productPictureKey}`;
       uploadedUrls.push(key);
     }
 

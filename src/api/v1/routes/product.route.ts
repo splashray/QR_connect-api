@@ -9,7 +9,10 @@ const productRouter = express.Router();
 productRouter.post("/", auth({ accountType: ["business"] }), productController.createProduct);
 
 // picture uplaod
-productRouter.post("/upload-images", auth({ accountType: ["business"] }), upload.array("images", 3), productController.uploadProductImages);
+productRouter.post("/upload-images",
+  auth({ accountType: ["business"] }), 
+  upload.array("images", 3), 
+  productController.uploadProductImages);
 
 // Get all products - Admin
 productRouter.get("/", auth({ accountType: ["admin"] }), productController.getProducts);

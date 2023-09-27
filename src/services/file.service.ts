@@ -92,7 +92,7 @@ async function reduceImageSize(filePath: string): Promise<string> {
   const resizedImagePath = `${filePath}-resized`;
 
   await sharp(filePath)
-    .resize({ width: 800, height: 600 })
+    .resize({ width: 1000, height: 1000 })
     .toFile(resizedImagePath);
 
   return resizedImagePath;
