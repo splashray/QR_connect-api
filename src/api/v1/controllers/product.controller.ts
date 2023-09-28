@@ -441,8 +441,8 @@ class ProductController {
       // Delete the resized image from the server
       await fsPromises.unlink(resizedImagePath);
 
-      // const key = `https://ravebooking.s3.amazonaws.com/${productPictureKey}`;
       const key = `https://qrconnect-files.s3.amazonaws.com/${productPictureKey}`;
+      console.log("final:", key)
       uploadedUrls.push(key);
     }
 
