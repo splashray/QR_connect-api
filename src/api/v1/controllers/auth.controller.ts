@@ -45,7 +45,7 @@ class AuthController {
     const { error, data } = validators.createBusinessValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
 
-    const { firstName, lastName, email, businessName, password, industry } =
+    const { firstName, lastName, email, businessName, businessSlogan, password, industry } =
       data;
     const emailExists = await Business.findOne({ email });
     if (emailExists) {
@@ -82,6 +82,7 @@ class AuthController {
       email,
       businessName,
       businessSlug,
+      businessSlogan,
       industry,
       accountType,
       userType: "Business",
@@ -425,7 +426,7 @@ class AuthController {
     const loggedInAccount = req.loggedInAccount;
     const { error, data } = validators.updateNewBusinessValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
-    const { businessName, industry} = data;
+    const { businessName, industry, businessSlogan} = data;
 
     if (loggedInAccount.accountType !== "Business") {
       throw new Forbidden(
@@ -457,6 +458,7 @@ class AuthController {
       loggedInAccount._id,
       { businessName,
         businessSlug,
+        businessSlogan,
         industry,
         qrcode: qrCodeImageURL,
         updatedAt: new Date() 

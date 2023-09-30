@@ -8,6 +8,7 @@ export const businessFields = [
   "email",
   "businessName",
   "businessSlug",
+  "businessSlogan",
   "industry",
   "profilePicture",
   "authMethod",

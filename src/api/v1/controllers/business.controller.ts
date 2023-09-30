@@ -79,11 +79,11 @@ class BusinessController {
     
     const { error, data } = validators.updateBusinessValidator(req.body);
     if (error) throw new BadRequest(error.message, error.code);
-    const { firstName, lastName, finishTourGuide, phoneNumber } = data;
+    const { firstName, lastName, finishTourGuide, phoneNumber, businessSlogan } = data;
 
     const business = await Business.findByIdAndUpdate(
       businessId,
-      { firstName, lastName, finishTourGuide, phoneNumber, updatedAt: new Date() },
+      { firstName, lastName, finishTourGuide, phoneNumber, businessSlogan, updatedAt: new Date() },
       { new: true }
     ).select(businessFields.join(" "));
 

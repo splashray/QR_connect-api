@@ -47,6 +47,9 @@ export const createBusinessValidator = (payload: any) => {
     businessName: z.string({
       required_error: "Business name is required.",
     }),
+    businessSlogan: z.string({
+      required_error: "Business slogan is required.",
+    }),
     industry: z.string({
       required_error: "Industry is required.",
     }),
@@ -216,6 +219,7 @@ export const updateBusinessValidator = (payload: any) => {
     lastName: z.string().optional(),
     finishTourGuide: z.boolean().optional(),
     phoneNumber: z.string().optional(),
+    businessSlogan: z.string().optional(),
   });
 
   return validateRequestBody(schema, payload);
@@ -228,6 +232,9 @@ export const updateNewBusinessValidator = (payload: any) => {
     }),
     industry: z.string({
       required_error: "industry is required.",
+    }),
+    businessSlogan: z.string({
+      required_error: "Business slogan is required.",
     }),
   });
 

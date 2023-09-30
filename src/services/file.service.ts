@@ -19,7 +19,6 @@ async function uploadPicture( file: string, folderName: string, fileExtension: s
   };
 
   await s3Client.send(new PutObjectCommand(bucketParams));
-  console.log("Direct:", bucketParams.Key)
   return bucketParams.Key;
 }
 // To use uploadPicture for example:

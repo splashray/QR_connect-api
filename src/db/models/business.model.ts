@@ -15,6 +15,7 @@ export interface IBusiness extends Document {
   lastName: string;
   businessName: string;
   businessSlug: string;
+  businessSlogan: string;
   industry: string;
   phoneNumber: string;
 
@@ -62,6 +63,10 @@ const BusinessSchema = new mongoose.Schema<IBusiness>(
     businessSlug: {
       type: String,
     },
+    businessSlogan:  {
+      type: String,
+    },
+
     industry: {
       type: String,
     },

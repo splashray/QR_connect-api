@@ -4,7 +4,7 @@ import qrcode from "qrcode";
 import slugify from "slugify";
 import { BadRequest, ResourceNotFound } from "../../../errors/httpErrors";
 import Product, {IProduct} from "../../../db/models/product.model";
-import Business from "../../../db/models/business.model";
+import Business, { IBusiness } from "../../../db/models/business.model";
 import * as validators from "../validators/product.validator"; 
 import { generateQRCode, generateRandomString } from "../../../utils/qrCodeHelpers";
 import {
@@ -129,10 +129,11 @@ class ProductController {
   // Get all products - General
   async getGeneralBusinessProducts(req: Request, res: Response) {
     const {businessSlug} = req.params;
-    const business = await Business.findOne({businessSlug});
+    const business: IBusiness | null = await Business.findOne({businessSlug});
+
     if (!business) {
       throw new ResourceNotFound(
-        `No products have been provided in the '${businessSlug}' store yet.`,
+        "No products have been provided in the store yet.",
         "RESOURCE_NOT_FOUND"
       );
     }
@@ -157,7 +158,13 @@ class ProductController {
       createdAt: { $gte: startDate, $lte: endDate },
     });
   
-    res.ok({ products, totalProducts }, { page, limit, startDate, endDate });
+    res.ok({ 
+      businessName: business.businessName, 
+      businessSlogan:  business.businessSlogan,   
+      products, 
+      totalProducts 
+    }, 
+    { page, limit, startDate, endDate });
     
   }
 
@@ -442,7 +449,6 @@ class ProductController {
       await fsPromises.unlink(resizedImagePath);
 
       const key = `https://qrconnect-files.s3.amazonaws.com/${productPictureKey}`;
-      console.log("final:", key)
       uploadedUrls.push(key);
     }
 
