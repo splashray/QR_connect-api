@@ -8,7 +8,7 @@ const subscriptionLogRouter = express.Router();
 subscriptionLogRouter.get("/", auth({ accountType: ["admin"] }), SubscriptionLogController.getSubscriptionLogs);
 
 // Get a subscription plan by ID
-subscriptionLogRouter.get("/:id", auth({ accountType: ["admin"] }),  SubscriptionLogController.getSubscriptionLogs);
+subscriptionLogRouter.get("/:id", auth({ accountType: ["admin"] }),  SubscriptionLogController.getSubscriptionLogById);
 
 
 export default subscriptionLogRouter;

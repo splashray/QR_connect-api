@@ -187,7 +187,7 @@ class SubscriptionController {
           payer_selected: "PAYPAL",
           payee_preferred: "IMMEDIATE_PAYMENT_REQUIRED",
         },
-        return_url: `${yourBaseURL}/store/dashboard`,
+        return_url: `${yourBaseURL}/auth/paypal-verify`,
         cancel_url: `${yourBaseURL}/auth/select-plan`,
       },
       custom_id: business._id,
