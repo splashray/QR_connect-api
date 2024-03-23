@@ -23,7 +23,9 @@ createBullBoard({
 const app = express();
 const whitelist = [
   "http://localhost:3000",
-  "https://qr-connect-site.vercel.app"
+  "https://qr-connect-site.vercel.app",
+  "https://qrconect.com",
+  "https://qrsupports.com"
 ];
 
 // Middlewares
