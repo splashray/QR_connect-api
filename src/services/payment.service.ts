@@ -5,7 +5,7 @@ import { redisClient } from "../config/redis.config";
 
 dotenv.config();
 
-const webhookId =  process.env.PAYPAL_WEBHOOK_ID;
+const webhookId = process.env.PAYPAL_WEBHOOK_ID;
 
 // Define a type or interface for the subscription payload
 interface PaypalSubscriptionPayload {
@@ -36,6 +36,18 @@ interface PaypalSubscriptionPayload {
     return_url: string;
     cancel_url: string;
   };
+}
+
+// Define a type or interface for the checkout payload
+interface PaypalCheckoutPayload {
+  intent: string;
+  purchase_units: {
+    amount: {
+      //reference_id: string;
+      currency_code: string;
+      value: string;
+    };
+  }[];
 }
 
 // Define the type for your webhook body
@@ -114,14 +126,13 @@ class PaypalService {
 
   async createSubscription(
     paypalSubscriptionPayload: PaypalSubscriptionPayload
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     const accessToken = await this.getAccessToken(
       process.env.PAYPAL_CLIENT_ID,
       process.env.PAYPAL_SECRET
     );
 
-    
     const payload = paypalSubscriptionPayload;
 
     const response: AxiosResponse = await axios.post(
@@ -143,8 +154,8 @@ class PaypalService {
 
   async cancelSubscription(
     reason: string,
-    subscribedIdFromPaypal: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    subscribedIdFromPaypal: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     const accessToken = await this.getAccessToken(
       process.env.PAYPAL_CLIENT_ID,
@@ -153,7 +164,7 @@ class PaypalService {
     const payload = {
       reason: reason,
     };
-  
+
     const response: AxiosResponse = await axios.post(
       `https://api-m.sandbox.paypal.com/v1/billing/subscriptions/${subscribedIdFromPaypal}/cancel`,
       payload,
@@ -172,8 +183,8 @@ class PaypalService {
 
   async activateSubscription(
     reason: string,
-    subscribedIdFromPaypal: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    subscribedIdFromPaypal: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     const accessToken = await this.getAccessToken(
       process.env.PAYPAL_CLIENT_ID,
@@ -182,7 +193,7 @@ class PaypalService {
     const payload = {
       reason: reason,
     };
-  
+
     const response: AxiosResponse = await axios.post(
       `https://api-m.sandbox.paypal.com/v1/billing/subscriptions/${subscribedIdFromPaypal}/activate`,
       payload,
@@ -199,7 +210,6 @@ class PaypalService {
     return response;
   }
 
- 
   //paypal webhook function
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async paypalWebhook(headers: any, body: any): Promise<any> {
@@ -212,8 +222,8 @@ class PaypalService {
     const transmission_id = headers["paypal-transmission-id"];
     const transmission_time = headers["paypal-transmission-time"];
     const cert_url = headers["paypal-cert-url"];
-    const auth_algo =  headers["paypal-auth-algo"]; 
-    const webhook_id = webhookId
+    const auth_algo = headers["paypal-auth-algo"];
+    const webhook_id = webhookId;
 
     const payload: WebhookBody = {
       transmission_id,
@@ -238,6 +248,50 @@ class PaypalService {
     return response.data;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async orderPayment(orderPayload: PaypalCheckoutPayload): Promise<any> {
+    const accessToken = await this.getAccessToken(
+      process.env.PAYPAL_CLIENT_ID,
+      process.env.PAYPAL_SECRET
+    );
+
+    const response: AxiosResponse = await axios.post(
+      "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+      orderPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "PayPal-Request-Id": "ORDER-PAYMENT-QR-Conect",
+        },
+      }
+    );
+    return response.data;
+  }
+
+  async getAccountInfo(
+    paypalEmail: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
+    const accessToken = await this.getAccessToken(
+      process.env.PAYPAL_CLIENT_ID,
+      process.env.PAYPAL_SECRET
+    );
+
+    const response: AxiosResponse = await axios.get(
+      `https://api.paypal.com/v1/verify/account?email=${paypalEmail}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "PayPal-Request-Id": "SUBSCRIPTION-QR-Conect",
+        },
+      }
+    );
+    return response;
+  }
 }
 
 export default new PaypalService();
