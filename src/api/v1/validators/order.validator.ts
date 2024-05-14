@@ -44,47 +44,21 @@ export const createOrderValidator = (payload: any) => {
 // Define the validation schema for updating an order
 export const updateOrderValidator = (payload: any) => {
   const schema = z.object({
-    orderRef: z.string().optional(),
-    buyerId: z.string().optional(),
-    products: z
-      .array(
-        z.object({
-          orderSubRef: z.string().optional(),
-          productId: z.string().optional(),
-          name: z.string().optional(),
-          quantity: z.number().optional(),
-          color: z.string().optional(),
-          size: z.number().optional(),
-          price: z.number().optional(),
-        })
-      )
+    orderStatus: z
+      .enum([
+        "Payment Unsuccessful",
+        "Out of Stock",
+        "Cancelled",
+        "Refund",
+        "Pending Confirmation",
+        "Waiting to be Shipped",
+        "Out for Delivery",
+        "Shipped",
+        "Delivered",
+        "Pending Payment",
+      ])
       .optional(),
-    orderDetails: z
-      .object({
-        NoOfItems: z.number().optional(),
-        totalAmount: z.number().optional(),
-        // orderStatus: z
-        //   .nativeEnum([
-        //     "Payment Unsuccessful",
-        //     "Out of Stock",
-        //     "Cancelled",
-        //     "Refund",
-        //     "Pending Confirmation",
-        //     "Waiting to be Shipped",
-        //     "Out for Delivery",
-        //     "Shipped",
-        //     "Delivered",
-        //   ])
-        //   .optional(),
-      })
-      .optional(),
-    paymentDetails: z
-      .object({
-        paymentRef: z.string().optional(),
-        paymentMethod: z.enum(["Stripe", "Paypal", "Cash"]).optional(),
-        paymentStatus: z.enum(["Pending", "Success", "Failed"]).optional(),
-      })
-      .optional(),
+
     deliveryDetails: z
       .object({
         shippingMethod: z.enum(["Door Delivery", "Pick-up Office"]).optional(),

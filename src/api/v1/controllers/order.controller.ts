@@ -1,21 +1,31 @@
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 
-// import Order, { IOrder } from "../../../db/models/order.model";
+import Order from "../../../db/models/order.model";
 import Product from "../../../db/models/product.model";
-import PaypalService from "../../../services/payment.service";
+import StripeService from "../../../services/stripe.service";
 
 import {
   BadRequest,
   ResourceNotFound,
   ServerError,
 } from "../../../errors/httpErrors";
+import {
+  getLimit,
+  getPage,
+  getStartDate,
+  getEndDate,
+} from "../../../utils/dataFilters";
+type QueryParams = {
+  startDate?: Date;
+  endDate?: Date;
+  limit?: string;
+  page?: string;
+};
 
 import * as validators from "../validators/order.validator";
-// const yourBaseURL = process.env.BASE_URL!;
-
 class OrderController {
-  async createOrder(req: Request, res: Response) {
+  async createOrderStripe(req: Request, res: Response) {
     const buyerId = req.loggedInAccount._id;
     const { error, data } = validators.createOrderValidator(req.body);
 
@@ -31,7 +41,8 @@ class OrderController {
 
     const productArray = [];
     let subtotal = 0;
-    const orderRef = uuidv4();
+    const uuid = uuidv4();
+    const orderRef = uuid.replace(/-/g, "").substring(0, 10);
 
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
@@ -62,245 +73,192 @@ class OrderController {
     const totalAmount = subtotal + shippingFee + tax;
     const totalSubAmount = subtotal;
 
+    // Calculate expectedDeliveryStart
+    const expectedDeliveryStart = new Date();
+    expectedDeliveryStart.setDate(expectedDeliveryStart.getDate() + 5);
+
+    // Calculate expectedDeliveryEnd
+    const expectedDeliveryEnd = new Date(expectedDeliveryStart);
+    expectedDeliveryEnd.setDate(expectedDeliveryEnd.getDate() + 3);
+
     const orderPayload = {
-      buyerId,
       orderRef,
+      buyerId,
       products: productArray,
       orderDetails: {
         noOfItems: products.length,
-        // orderStatus
+        orderStatus: "Pending Payment",
       },
       paymentDetails: {
+        // paymentRef,
+        paymentStatus: "Pending",
         paymentMethod: paymentDetails.paymentMethod,
         totalAmount,
         totalSubAmount,
         shippingFee,
         tax,
-        // paymentRef, paymentStatus
       },
-      deliveryDetails,
-      // expectedDeliveryStart,
-      // expectedDeliveryEnd,
+      deliveryDetails: {
+        ...deliveryDetails,
+        expectedDeliveryStart,
+        expectedDeliveryEnd,
+      },
     };
 
-    const orderPaypal = {
-      intent: "CAPTURE",
-      purchase_units: [
-        {
-          amount: {
-            // reference_id: "d9f80740-38f0-11e8-b467-0ed5f89f718b",
-            currency_code: "USD",
-            value: orderPayload.paymentDetails.totalAmount.toString(),
-          },
-        },
-      ],
-    };
+    // Create airtime document
+    const order = await Order.create(orderPayload);
+    const stripeTotalAmount = Math.round(
+      Number(order.paymentDetails.totalAmount) * 100
+    ); // Round to nearest integer
 
-    const result = await PaypalService.orderPayment(orderPaypal);
-    console.log(result);
-
-    if (!result) {
+    // create the payment link
+    const response = await StripeService.createCheckoutSession(
+      stripeTotalAmount,
+      order.id
+    );
+    if (!response) {
       throw new ServerError(
         "Initiate payment failed",
         "THIRD_PARTY_API_FAILURE"
       );
     }
 
-    const approveLink = result.links.find(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (link: any) => link.rel === "approve"
-    );
+    //in the webhook
+    //perform business wallet logic
+    //create transaction
+    //update order
+    return res.ok({
+      redirectUrl: response.url,
+      order,
+      messageOrder:
+        "Order request created successfully, pay within next 30 minutes to avoid order being cancelled.",
+    });
+  }
 
-    if (approveLink) {
-      const approvalUrl = approveLink.href;
-      // Redirect the user to the approval URL, which will take them to PayPal for payment approval
-      return res.ok({
-        approvalUrl,
-        message: "Order payment link created.",
-      });
+  // Get all orders by admin
+  async getOrdersByAdmin(req: Request, res: Response) {
+    const queryParams: QueryParams = req.query;
+    const startDate = getStartDate(queryParams.startDate);
+    const endDate = getEndDate(queryParams.endDate);
+    const limit = getLimit(queryParams.limit);
+    const page = getPage(queryParams.page);
+
+    const orders = await Order.find({
+      createdAt: { $gte: startDate, $lte: endDate },
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .skip(limit * (page - 1));
+    const totalOrders = await Order.countDocuments(orders);
+
+    res.ok({ orders, totalOrders }, { page, limit, startDate, endDate });
+  }
+
+  // Get all orders by buyer
+  async getOrdersByBuyer(req: Request, res: Response) {
+    const buyerId = req.loggedInAccount._id;
+    const queryParams: QueryParams = req.query;
+    const startDate = getStartDate(queryParams.startDate);
+    const endDate = getEndDate(queryParams.endDate);
+    const limit = getLimit(queryParams.limit);
+    const page = getPage(queryParams.page);
+
+    const orders = await Order.find({
+      buyerId,
+      createdAt: { $gte: startDate, $lte: endDate },
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .skip(limit * (page - 1));
+    const totalOrders = await Order.countDocuments(orders);
+
+    res.ok({ orders, totalOrders }, { page, limit, startDate, endDate });
+  }
+
+  // Get all orders by buisness
+  async getOrdersByBusiness(req: Request, res: Response) {
+    const businessId = req.loggedInAccount._id;
+
+    const queryParams: QueryParams = req.query;
+    const startDate = getStartDate(queryParams.startDate);
+    const endDate = getEndDate(queryParams.endDate);
+    const limit = getLimit(queryParams.limit);
+    const page = getPage(queryParams.page);
+
+    // Find all products belonging to the specified business
+    const products = await Product.find({ businessId });
+
+    // Extract productIds from the products found
+    const productIds = products.map((product) => product._id);
+
+    // Find orders where at least one product belongs to the specified business
+    const orders = await Order.find({
+      createdAt: { $gte: startDate, $lte: endDate },
+      "products.productId": { $in: productIds },
+    })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .skip(limit * (page - 1));
+
+    const totalOrders = await Order.countDocuments(orders);
+
+    res.ok({ orders, totalOrders }, { page, limit, startDate, endDate });
+  }
+
+  async getSingleOrder(req: Request, res: Response) {
+    const { id } = req.params;
+    if (!id) {
+      throw new ResourceNotFound(
+        "business Id is missing.",
+        "RESOURCE_NOT_FOUND"
+      );
     }
+    const order = await Order.findById(id);
+    if (!order) {
+      throw new ResourceNotFound(
+        `No order with id : ${id}`,
+        "RESOURCE_NOT_FOUND"
+      );
+    }
+    res.ok({ order });
+  }
+
+  async updateOrder(req: Request, res: Response) {
+    const { id } = req.params;
+
+    // Validate the request body
+    const { error, data } = validators.updateOrderValidator(req.body);
+    if (error) {
+      throw new BadRequest(error.message, error.code);
+    }
+
+    // Extract the editable fields from the validated data
+    const { orderStatus, deliveryDetails } = data;
+
+    // Find the order by id
+    const order = await Order.findOne({ _id: id });
+    if (!order) {
+      throw new ResourceNotFound(
+        `No order with id : ${id}`,
+        "RESOURCE_NOT_FOUND"
+      );
+    }
+
+    // Update the order status if provided and valid
+    if (orderStatus) {
+      order.orderDetails.orderStatus = orderStatus;
+    }
+
+    // Update the delivery details if provided
+    if (deliveryDetails) {
+      Object.assign(order.deliveryDetails, deliveryDetails);
+    }
+
+    // Save the updated order
+    await order.save();
+
+    res.ok({ order });
   }
 }
 
 export default new OrderController();
-
-// const getAllOrders = async (req, res) => {
-//   const orders = await Order.find({});
-//   res.status(StatusCodes.OK).json({ orders, count: orders.length });
-// };
-
-// const getSingleOrder = async (req, res) => {
-//   const { id: orderId } = req.params;
-//   const order = await Order.findOne({ _id: orderId });
-//   if (!order) {
-//     throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
-//   }
-//   checkPermissions(req.user, order.user);
-//   res.status(StatusCodes.OK).json({ order });
-// };
-
-// const getCurrentUserOrders = async (req, res) => {
-//   const orders = await Order.find({ user: req.user.userId });
-//   res.status(StatusCodes.OK).json({ orders, count: orders.length });
-// };
-
-// const updateOrder = async (req, res) => {
-//   const { id: orderId } = req.params;
-//   const { paymentIntentId } = req.body;
-
-//   const order = await Order.findOne({ _id: orderId });
-//   if (!order) {
-//     throw new CustomError.NotFoundError(`No order with id : ${orderId}`);
-//   }
-//   checkPermissions(req.user, order.user);
-
-//   order.paymentIntentId = paymentIntentId;
-//   order.status = "paid";
-//   await order.save();
-
-//   res.status(StatusCodes.OK).json({ order });
-// };
-
-// import express from "express";
-// import fetch from "node-fetch";
-// import "dotenv/config";
-// import path from "path";
-
-// const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PORT = 8888 } = process.env;
-// const base = "https://api-m.sandbox.paypal.com";
-// const app = express();
-
-// // host static files
-// app.use(express.static("client"));
-
-// // parse post params sent in body in json format
-// app.use(express.json());
-
-// /**
-//  * Generate an OAuth 2.0 access token for authenticating with PayPal REST APIs.
-//  * @see https://developer.paypal.com/api/rest/authentication/
-//  */
-// const generateAccessToken = async () => {
-//   try {
-//     if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-//       throw new Error("MISSING_API_CREDENTIALS");
-//     }
-//     const auth = Buffer.from(
-//       PAYPAL_CLIENT_ID + ":" + PAYPAL_CLIENT_SECRET
-//     ).toString("base64");
-//     const response = await fetch(`${base}/v1/oauth2/token`, {
-//       method: "POST",
-//       body: "grant_type=client_credentials",
-//       headers: {
-//         Authorization: `Basic ${auth}`,
-//       },
-//     });
-
-//     const data = await response.json();
-//     return data.access_token;
-//   } catch (error) {
-//     console.error("Failed to generate Access Token:", error);
-//   }
-// };
-
-// /**
-//  * Create an order to start the transaction.
-//  * @see https://developer.paypal.com/docs/api/orders/v2/#orders_create
-//  */
-// const createOrder = async (cart) => {
-//   // use the cart information passed from the front-end to calculate the purchase unit details
-//   console.log(
-//     "shopping cart information passed from the frontend createOrder() callback:",
-//     cart
-//   );
-
-//   const accessToken = await generateAccessToken();
-//   const url = `${base}/v2/checkout/orders`;
-//   const payload = {
-//     intent: "CAPTURE",
-//     purchase_units: [
-//       {
-//         amount: {
-//           currency_code: "USD",
-//           value: "100.00",
-//         },
-//       },
-//     ],
-//   };
-
-//   const response = await fetch(url, {
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${accessToken}`,
-//       // Uncomment one of these to force an error for negative testing (in sandbox mode only). Documentation:
-//       // https://developer.paypal.com/tools/sandbox/negative-testing/request-headers/
-//       // "PayPal-Mock-Response": '{"mock_application_codes": "MISSING_REQUIRED_PARAMETER"}'
-//       // "PayPal-Mock-Response": '{"mock_application_codes": "PERMISSION_DENIED"}'
-//       // "PayPal-Mock-Response": '{"mock_application_codes": "INTERNAL_SERVER_ERROR"}'
-//     },
-//     method: "POST",
-//     body: JSON.stringify(payload),
-//   });
-
-//   return handleResponse(response);
-// };
-
-// /**
-//  * Capture payment for the created order to complete the transaction.
-//  * @see https://developer.paypal.com/docs/api/orders/v2/#orders_capture
-//  */
-// const captureOrder = async (orderID) => {
-//   const accessToken = await generateAccessToken();
-//   const url = `${base}/v2/checkout/orders/${orderID}/capture`;
-
-//   const response = await fetch(url, {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${accessToken}`,
-//       // Uncomment one of these to force an error for negative testing (in sandbox mode only). Documentation:
-//       // https://developer.paypal.com/tools/sandbox/negative-testing/request-headers/
-//       // "PayPal-Mock-Response": '{"mock_application_codes": "INSTRUMENT_DECLINED"}'
-//       // "PayPal-Mock-Response": '{"mock_application_codes": "TRANSACTION_REFUSED"}'
-//       // "PayPal-Mock-Response": '{"mock_application_codes": "INTERNAL_SERVER_ERROR"}'
-//     },
-//   });
-
-//   return handleResponse(response);
-// };
-
-// async function handleResponse(response) {
-//   try {
-//     const jsonResponse = await response.json();
-//     return {
-//       jsonResponse,
-//       httpStatusCode: response.status,
-//     };
-//   } catch (err) {
-//     const errorMessage = await response.text();
-//     throw new Error(errorMessage);
-//   }
-// }
-
-// app.post("/api/orders", async (req, res) => {
-//   try {
-//     // use the cart information passed from the front-end to calculate the order amount detals
-//     const { cart } = req.body;
-//     const { jsonResponse, httpStatusCode } = await createOrder(cart);
-//     res.status(httpStatusCode).json(jsonResponse);
-//   } catch (error) {
-//     console.error("Failed to create order:", error);
-//     res.status(500).json({ error: "Failed to create order." });
-//   }
-// });
-
-// app.post("/api/orders/:orderID/capture", async (req, res) => {
-//   try {
-//     const { orderID } = req.params;
-//     const { jsonResponse, httpStatusCode } = await captureOrder(orderID);
-//     res.status(httpStatusCode).json(jsonResponse);
-//   } catch (error) {
-//     console.error("Failed to create order:", error);
-//     res.status(500).json({ error: "Failed to capture order." });
-//   }
-// });

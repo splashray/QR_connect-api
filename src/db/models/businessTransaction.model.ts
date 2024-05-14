@@ -3,6 +3,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 export interface IBusinessTransaction extends Document {
   businessId: mongoose.Types.ObjectId;
   orderId: mongoose.Types.ObjectId;
+  orderSubRef?: string;
   withdrawalId: mongoose.Types.ObjectId;
   refNo: string;
   transactionType: "credit" | "withdrawal";
@@ -20,6 +21,9 @@ const businessTransactionSchema = new Schema<IBusinessTransaction>(
     orderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
+    },
+    orderSubRef: {
+      type: String,
     },
     withdrawalId: {
       type: mongoose.Schema.Types.ObjectId,

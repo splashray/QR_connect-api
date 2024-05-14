@@ -24,10 +24,11 @@ export interface IOrder extends Document {
       | "Waiting to be Shipped"
       | "Out for Delivery"
       | "Shipped"
-      | "Delivered";
+      | "Delivered"
+      | "Pending Payment";
   };
   paymentDetails: {
-    paymentRef: string;
+    paymentRef?: string;
     paymentMethod: "Stripe" | "Paypal" | "Cash";
     paymentStatus: "Pending" | "Success" | "Failed";
     totalAmount: number;
@@ -110,6 +111,7 @@ const OrderSchema = new mongoose.Schema<IOrder>(
           "Out for Delivery",
           "Shipped",
           "Delivered",
+          "Pending Payment",
         ],
         required: true,
       },
@@ -118,7 +120,7 @@ const OrderSchema = new mongoose.Schema<IOrder>(
     paymentDetails: {
       paymentRef: {
         type: String,
-        required: true,
+        // required: true,
       },
       paymentMethod: {
         type: String,

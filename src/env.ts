@@ -8,6 +8,8 @@ export const envSchema = z.object({
   PAYPAL_SECRET: z.string(),
   PAYPAL_WEBHOOK_ID: z.string(),
 
+  STRIPE_API_KEY: z.string(),
+
   REDIS_URL: z.string(),
   REDIS_HOST: z.string(),
   REDIS_PORT: z.string(),
@@ -16,8 +18,8 @@ export const envSchema = z.object({
   MAILGUN_DOMAIN: z.string(),
   MAILGUN_SENDER_EMAIL: z.string().email(),
 
-  GOOGLE_CLIENT_ID :z.string(),
-  GOOGLE_CLIENT_SECRET :z.string(),
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
 
   JWT_SEC: z.string(),
   REFRESH_TOKEN: z.string(),
@@ -25,7 +27,7 @@ export const envSchema = z.object({
   AWS_LOCATIONCONSTRAINT: z.string(),
   SPACES_KEY: z.string(),
   SPACES_SECRET: z.string(),
-  SPACES_S3_BUCKET: z.string()
+  SPACES_S3_BUCKET: z.string(),
 });
 
 try {

@@ -12,6 +12,7 @@ import businessWalletRouter from "./businessWallet.route";
 import subscriptionPlanRouter from "./subscriptionPlan.route";
 import subscriptionLogRouter from "./subscriptionLog.route";
 import subscriptionRouter from "./subscription.route";
+import transactionRouter from "./transaction.route";
 import webhookRouter from "./webhook.route";
 
 const router = express.Router();
@@ -28,6 +29,7 @@ router.use("/businessWallets", businessWalletRouter);
 router.use("/subscriptionPlans", subscriptionPlanRouter);
 router.use("/subscriptionLogs", subscriptionLogRouter);
 router.use("/subscriptions", subscriptionRouter);
+router.use("/transactions", transactionRouter);
 router.use("/webhooks", webhookRouter);
 
 router.use("/", sharedRouter);
