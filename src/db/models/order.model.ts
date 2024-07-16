@@ -9,7 +9,7 @@ export interface IOrder extends Document {
     productId: mongoose.Types.ObjectId;
     quantity: number;
     color: string;
-    size: number;
+    size: string;
     price: number;
     subtotal: number;
   }[];
@@ -80,7 +80,7 @@ const OrderSchema = new mongoose.Schema<IOrder>(
           required: true,
         },
         size: {
-          type: Number,
+          type: String,
           required: true,
         },
         price: {

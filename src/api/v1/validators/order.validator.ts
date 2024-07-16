@@ -10,7 +10,7 @@ export const createOrderValidator = (payload: any) => {
         productId: z.string({ required_error: "productId is required." }),
         quantity: z.number({ required_error: "quantity is required." }),
         color: z.string({ required_error: "color is required." }),
-        size: z.number({ required_error: "size is required." }),
+        size: z.string({ required_error: "size is required." }),
       })
     ),
 
