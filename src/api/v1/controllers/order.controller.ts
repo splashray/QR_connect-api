@@ -148,7 +148,9 @@ class OrderController {
     })
       .sort({ createdAt: 1 })
       .limit(limit)
-      .skip(limit * (page - 1));
+      .skip(limit * (page - 1))
+      .populate("products.productId");
+
     const totalOrders = await Order.countDocuments(orders);
 
     res.ok({ orders, totalOrders }, { page, limit, startDate, endDate });
@@ -169,7 +171,9 @@ class OrderController {
     })
       .sort({ createdAt: 1 })
       .limit(limit)
-      .skip(limit * (page - 1));
+      .skip(limit * (page - 1))
+      .populate("products.productId");
+
     const totalOrders = await Order.countDocuments(orders);
 
     res.ok({ orders, totalOrders }, { page, limit, startDate, endDate });
@@ -198,7 +202,8 @@ class OrderController {
     })
       .sort({ createdAt: 1 })
       .limit(limit)
-      .skip(limit * (page - 1));
+      .skip(limit * (page - 1))
+      .populate("products.productId");
 
     const totalOrders = await Order.countDocuments(orders);
 
@@ -213,7 +218,7 @@ class OrderController {
         "RESOURCE_NOT_FOUND"
       );
     }
-    const order = await Order.findById(id);
+    const order = await Order.findById(id).populate("products.productId");
     if (!order) {
       throw new ResourceNotFound(
         `No order with id : ${id}`,
@@ -258,6 +263,56 @@ class OrderController {
     await order.save();
 
     res.ok({ order });
+  }
+
+  // handle payment trial
+  async handlePaymentTrialWithStripe(req: Request, res: Response) {
+    const buyerId = req.loggedInAccount._id;
+
+    const { orderId } = req.query;
+    if (!orderId) {
+      throw new ResourceNotFound("Order id is missing.", "RESOURCE_NOT_FOUND");
+    }
+
+    const order = await Order.findOne({
+      _id: orderId,
+      buyerId,
+    });
+
+    if (!order) {
+      throw new ResourceNotFound(
+        "Order not found or not associated with your account.",
+        "RESOURCE_NOT_FOUND"
+      );
+    }
+    if (order.paymentDetails.paymentStatus !== "Pending") {
+      throw new BadRequest(
+        "You cannot continue with this transaction.",
+        "INVALID_REQUEST_PARAMETERS"
+      );
+    }
+    const stripeTotalAmount = Math.round(
+      Number(order.paymentDetails.totalAmount) * 100
+    ); // Round to nearest integer
+
+    // create the payment link
+    const response = await StripeService.createCheckoutSession(
+      stripeTotalAmount,
+      order._id // Use _id here
+    );
+    if (!response) {
+      throw new ServerError(
+        "Initiate payment failed",
+        "THIRD_PARTY_API_FAILURE"
+      );
+    }
+
+    return res.ok({
+      redirectUrl: response.url,
+      order,
+      messageOrder:
+        "Payment link successfully generated, pay within next 5 minutes to avoid order being cancelled.",
+    });
   }
 }
 

@@ -39,7 +39,7 @@ class StripeService {
 
     const session = await stripe.checkout.sessions.create(sessionCreateParams);
 
-    console.log(session);
+    // console.log(session);
 
     return session;
   }

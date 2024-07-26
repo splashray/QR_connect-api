@@ -11,6 +11,13 @@ orderRouter.post(
   orderController.createOrderStripe
 );
 
+// handle payment regeneration link by ID
+orderRouter.get(
+  "/regenerate",
+  auth({ accountType: ["buyer"] }),
+  orderController.handlePaymentTrialWithStripe
+);
+
 orderRouter.get(
   "/admin",
   auth({ accountType: ["admin"] }),
