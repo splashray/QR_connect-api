@@ -19,6 +19,12 @@ businessRouter.get(
   controller.getBusinessDashboard
 );
 
+businessRouter.get(
+  "/report",
+  auth({ accountType: ["business"] }),
+  controller.getMonthlyBusinessStats
+);
+
 // businesss and admin route
 businessRouter.get(
   "/:businessId",

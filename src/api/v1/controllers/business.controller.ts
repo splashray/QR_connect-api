@@ -441,6 +441,102 @@ class BusinessController {
       mostSoldProducts,
     });
   }
+
+  async getMonthlyBusinessStats(req: Request, res: Response) {
+    const businessId = req.loggedInAccount._id;
+    const { month, year } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({ message: "Month and year are required" });
+    }
+
+    const startOfMonth = moment()
+      .month(month - 1)
+      .year(year)
+      .startOf("month")
+      .toDate();
+    const endOfMonth = moment()
+      .month(month - 1)
+      .year(year)
+      .endOf("month")
+      .toDate();
+
+    // Get all product IDs belonging to this business
+    const businessProductIds = await Product.distinct("_id", { businessId });
+
+    // Total Revenue for the month
+    const revenueData = await Order.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $unwind: "$products" },
+      {
+        $lookup: {
+          from: "products",
+          localField: "products.productId",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      { $unwind: "$productDetails" },
+      { $match: { "productDetails.businessId": businessId } },
+      { $group: { _id: null, totalRevenue: { $sum: "$products.subtotal" } } },
+    ]);
+    const totalRevenue = revenueData[0]?.totalRevenue || 0;
+
+    // Total Orders for the month
+    const totalOrders = await Order.countDocuments({
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+      "products.productId": { $in: businessProductIds },
+    });
+
+    // New Customers for the month
+    const newCustomers = await Order.distinct("buyerId", {
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+      "products.productId": { $in: businessProductIds },
+    }).then((customers) => customers.length);
+
+    // Top Products for the month
+    const topProducts = await Order.aggregate([
+      { $unwind: "$products" },
+      {
+        $match: {
+          "products.productId": { $in: businessProductIds },
+          createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+        },
+      },
+      {
+        $group: {
+          _id: "$products.productId",
+          totalSold: { $sum: "$products.quantity" },
+        },
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 3 },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      { $unwind: "$productDetails" },
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          productName: "$productDetails.productName",
+          totalSold: 1,
+        },
+      },
+    ]);
+
+    res.ok({
+      totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+      totalOrders,
+      newCustomers,
+      topProducts,
+    });
+  }
 }
 
 export default new BusinessController();
