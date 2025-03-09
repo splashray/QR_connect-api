@@ -485,20 +485,20 @@ class ProductController {
     }
     let uploadedImages: Express.Multer.File[] = [];
 
-    if (!req.files) {
+    if (!req.) {
       throw new BadRequest("No images provided.", "MISSING_REQUIRED_FIELD");
     }
 
-    if (Array.isArray(req.files)) {
-      // If req.files is an array, assign it directly
-      uploadedImages = req.files as Express.Multer.File[];
+    if (Array.isArray(req.)) {
+      // If req. is an array, assign it directly
+      uploadedImages = req. as Express.Multer.File[];
     } else {
-      // If req.files is an object with fieldnames, extract the files
+      // If req. is an object with fieldnames, extract the 
       uploadedImages = Object.values(
-        req.files as {
+        req. as {
           [fieldname: string]: Express.Multer.File[];
         }
-      ).reduce((acc, files) => acc.concat(files), []);
+      ).reduce((acc, ) => acc.concat(), []);
     }
 
     if (!uploadedImages || uploadedImages.length === 0) {
@@ -521,7 +521,7 @@ class ProductController {
       // Delete the resized image from the server
       await fsPromises.unlink(resizedImagePath);
 
-      const key = `https://qrconnect-files.s3.amazonaws.com/${productPictureKey}`;
+      const key = `https://qrconnect-file.s3.amazonaws.com/${productPictureKey}`;
       uploadedUrls.push(key);
     }
 
