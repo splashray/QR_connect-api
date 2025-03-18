@@ -444,20 +444,20 @@ class BusinessController {
 
   async getMonthlyBusinessStats(req: Request, res: Response) {
     const businessId = req.loggedInAccount._id;
-    const { month, year } = req.body;
+    const { month, year } = req.query;
 
     if (!month || !year) {
       return res.status(400).json({ message: "Month and year are required" });
     }
 
     const startOfMonth = moment()
-      .month(month - 1)
-      .year(year)
+      .month(Number(month) - 1)
+      .year(Number(year))
       .startOf("month")
       .toDate();
     const endOfMonth = moment()
-      .month(month - 1)
-      .year(year)
+      .month(Number(month) - 1)
+      .year(Number(year))
       .endOf("month")
       .toDate();
 
