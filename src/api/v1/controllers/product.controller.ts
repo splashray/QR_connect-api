@@ -263,6 +263,84 @@ class ProductController {
     }
   }
 
+  // async searchProductsByProductName(req: Request, res: Response) {
+  //   const { businessSlug } = req.params;
+  //   if (!businessSlug) {
+  //     throw new ResourceNotFound(
+  //       "Wrong store name... The store you are looking for doesn't exist.",
+  //       "RESOURCE_NOT_FOUND"
+  //     );
+  //   }
+
+  //   const business = await Business.findOne({ businessSlug });
+
+  //   if (!business) {
+  //     throw new ResourceNotFound(
+  //       `No products have been provided in the '${businessSlug}' store yet.`,
+  //       "RESOURCE_NOT_FOUND"
+  //     );
+  //   }
+
+  //   // Get the businessId of the found business
+  //   const businessId = business._id;
+
+  //   // Get the query parameters and cast them to strings
+  //   const productName: string | undefined = String(req.query.productName);
+
+  //   // Define the base cache key based on the businessId
+  //   const baseCacheKey = `product_search_${businessId}`;
+
+  //   if (productName) {
+  //     // Search by productName
+  //     const productNameCacheKey = `${baseCacheKey}_productName_${productName}`;
+  //     const cachedProductNameResults =
+  //       await redisClient.get(productNameCacheKey);
+
+  //     if (cachedProductNameResults) {
+  //       // If results are cached, return them directly
+  //       const parsedResults = JSON.parse(cachedProductNameResults);
+  //       return res.ok({
+  //         searchedProducts: parsedResults,
+  //         totalSearchedProducts: parsedResults.length,
+  //       });
+  //     }
+
+  //     // If results are not cached, perform the search query for productName
+  //     const productNameSearchCriteria = {
+  //       businessId, // Filter by the specific businessId
+  //       productName: { $regex: new RegExp(productName, "i") },
+  //     };
+
+  //     const searchedProducts = await Product.find(productNameSearchCriteria);
+
+  //     // Cache the search results for productName with an expiration time (e.g., 1 hour)
+  //     await redisClient.set(
+  //       productNameCacheKey,
+  //       JSON.stringify(searchedProducts),
+  //       {
+  //         EX: PRODUCT_CACHE_EXPIRATION,
+  //         NX: true,
+  //       }
+  //     );
+
+  //     const totalSearchedProducts = searchedProducts.length;
+
+  //     if (totalSearchedProducts === 0) {
+  //       return res.ok({
+  //         message: "No products found matching the search criteria.",
+  //       });
+  //     }
+
+  //     return res.ok({ searchedProducts, totalSearchedProducts });
+  //   } else {
+  //     // If neither productName nor productCategory is provided, return an error message
+  //     return res.error(
+  //       400,
+  //       "Please provide a search query (productName or productCategory).",
+  //       "INVALID_REQUEST_PARAMETERS"
+  //     );
+  //   }
+  // }
   async searchProductsByProductName(req: Request, res: Response) {
     const { businessSlug } = req.params;
     if (!businessSlug) {
@@ -287,42 +365,14 @@ class ProductController {
     // Get the query parameters and cast them to strings
     const productName: string | undefined = String(req.query.productName);
 
-    // Define the base cache key based on the businessId
-    const baseCacheKey = `product_search_${businessId}`;
-
     if (productName) {
       // Search by productName
-      const productNameCacheKey = `${baseCacheKey}_productName_${productName}`;
-      const cachedProductNameResults =
-        await redisClient.get(productNameCacheKey);
-
-      if (cachedProductNameResults) {
-        // If results are cached, return them directly
-        const parsedResults = JSON.parse(cachedProductNameResults);
-        return res.ok({
-          searchedProducts: parsedResults,
-          totalSearchedProducts: parsedResults.length,
-        });
-      }
-
-      // If results are not cached, perform the search query for productName
       const productNameSearchCriteria = {
         businessId, // Filter by the specific businessId
         productName: { $regex: new RegExp(productName, "i") },
       };
 
       const searchedProducts = await Product.find(productNameSearchCriteria);
-
-      // Cache the search results for productName with an expiration time (e.g., 1 hour)
-      await redisClient.set(
-        productNameCacheKey,
-        JSON.stringify(searchedProducts),
-        {
-          EX: PRODUCT_CACHE_EXPIRATION,
-          NX: true,
-        }
-      );
-
       const totalSearchedProducts = searchedProducts.length;
 
       if (totalSearchedProducts === 0) {
@@ -493,7 +543,7 @@ class ProductController {
       // If req.files is an array, assign it directly
       uploadedImages = req.files as Express.Multer.File[];
     } else {
-      // If req.files is an object with fieldnames, extract the 
+      // If req.files is an object with fieldnames, extract the
       uploadedImages = Object.values(
         req.files as {
           [fieldname: string]: Express.Multer.File[];
