@@ -485,20 +485,20 @@ class ProductController {
     }
     let uploadedImages: Express.Multer.File[] = [];
 
-    if (!req.) {
+    if (!req.files) {
       throw new BadRequest("No images provided.", "MISSING_REQUIRED_FIELD");
     }
 
-    if (Array.isArray(req.)) {
-      // If req. is an array, assign it directly
-      uploadedImages = req. as Express.Multer.File[];
+    if (Array.isArray(req.files)) {
+      // If req.files is an array, assign it directly
+      uploadedImages = req.files as Express.Multer.File[];
     } else {
-      // If req. is an object with fieldnames, extract the 
+      // If req.files is an object with fieldnames, extract the 
       uploadedImages = Object.values(
-        req. as {
+        req.files as {
           [fieldname: string]: Express.Multer.File[];
         }
-      ).reduce((acc, ) => acc.concat(), []);
+      ).reduce((acc, files) => acc.concat(files), []);
     }
 
     if (!uploadedImages || uploadedImages.length === 0) {
