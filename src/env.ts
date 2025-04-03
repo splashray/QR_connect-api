@@ -7,6 +7,7 @@ export const envSchema = z.object({
   PAYPAL_CLIENT_ID: z.string(),
   PAYPAL_SECRET: z.string(),
   PAYPAL_WEBHOOK_ID: z.string(),
+  PAYPAL_BASE_URL: z.string(),
 
   STRIPE_API_KEY: z.string(),
 

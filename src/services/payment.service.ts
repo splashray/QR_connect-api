@@ -7,6 +7,8 @@ dotenv.config();
 
 const webhookId = process.env.PAYPAL_WEBHOOK_ID;
 
+const paypalBaseUrl = process.env.PAYPAL_BASE_URL;
+
 // Define a type or interface for the subscription payload
 interface PaypalSubscriptionPayload {
   plan_id: string;
@@ -91,6 +93,8 @@ class PaypalService {
   async getAccessToken(clientId: string, secret: string): Promise<string> {
     const redisKey = "paypal_access_token";
 
+    console.log("Redis key:", redisKey);
+    console.log("redisClient", redisClient);
     // Check if the access token is already cached in Redis
     const cachedToken = await redisClient.get(redisKey);
 
@@ -102,7 +106,7 @@ class PaypalService {
     const base64AuthString = Buffer.from(authString).toString("base64");
 
     const response: AxiosResponse = await axios.post(
-      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+      `${paypalBaseUrl}/v1/oauth2/token`,
       "grant_type=client_credentials",
       {
         headers: {
@@ -114,6 +118,7 @@ class PaypalService {
 
     const { access_token, expires_in } = response.data;
 
+    console.log("Response: ", access_token, expires_in);
     // Cache the access token in Redis with an expiration time
     // Use type assertion (as any) to bypass TypeScript type checking
 
@@ -136,7 +141,7 @@ class PaypalService {
     const payload = paypalSubscriptionPayload;
 
     const response: AxiosResponse = await axios.post(
-      "https://api-m.sandbox.paypal.com/v1/billing/subscriptions",
+      `${paypalBaseUrl}/v1/billing/subscriptions`,
       payload,
       {
         headers: {
@@ -166,7 +171,7 @@ class PaypalService {
     };
 
     const response: AxiosResponse = await axios.post(
-      `https://api-m.sandbox.paypal.com/v1/billing/subscriptions/${subscribedIdFromPaypal}/cancel`,
+      `${paypalBaseUrl}/v1/billing/subscriptions/${subscribedIdFromPaypal}/cancel`,
       payload,
       {
         headers: {
@@ -195,7 +200,7 @@ class PaypalService {
     };
 
     const response: AxiosResponse = await axios.post(
-      `https://api-m.sandbox.paypal.com/v1/billing/subscriptions/${subscribedIdFromPaypal}/activate`,
+      `${paypalBaseUrl}/v1/billing/subscriptions/${subscribedIdFromPaypal}/activate`,
       payload,
       {
         headers: {
@@ -236,7 +241,7 @@ class PaypalService {
     };
 
     const response = await axios.post(
-      "https://api-m.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+      `${paypalBaseUrl}/v1/notifications/verify-webhook-signature`,
       payload,
       {
         headers: {
@@ -256,7 +261,7 @@ class PaypalService {
     );
 
     const response: AxiosResponse = await axios.post(
-      "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+      `${paypalBaseUrl}/v2/checkout/orders`,
       orderPayload,
       {
         headers: {
